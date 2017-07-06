@@ -45,12 +45,17 @@ def download_files(year_x_quarter, URL_INDEX_PATTERN, DATA_GZ_FOLDER, START_YEAR
 
         del year_x_quarter[idx]
 
+    new_data = False
+
     # Download GZ files
     for y, q in tqdm.tqdm(year_x_quarter, desc='Downloading company\' indices'):
         url = URL_INDEX_PATTERN.format(quarter=q, year=y)
         filename = os.path.join(DATA_GZ_FOLDER, '{year}_{quarter}.gz'.format(year=y, quarter=q))
 
         urllib.request.urlretrieve(url, filename)
+        new_data = True
+
+    return new_data
 
 
 def read_data(DATA_GZ_FOLDER, DATA_PD_FOLDER, PDF_MERGE_FILE):
@@ -175,7 +180,7 @@ if __name__ == "__main__":
     URL_ROOT = 'https://www.sec.gov/Archives/'
     URL_INDEX_PATTERN = URL_ROOT + 'edgar/full-index/{year}/QTR{quarter}/company.gz'
     PDF_MERGE_FILE = os.path.join(DATA_PD_FOLDER, 'merged_pds.pd')
-
+    PDF_MERGE_10K_FILE = os.path.join(DATA_PD_FOLDER, 'merged_10k_pds.pd')
     START_YEAR = 1993
     START_QUARTER = 1
 
@@ -186,12 +191,18 @@ if __name__ == "__main__":
     year_x_quarter = compute_year_quarter(START_YEAR, START_QUARTER)
 
     # Download all indices related to the determined years and quarters
-    download_files(year_x_quarter, URL_INDEX_PATTERN, DATA_GZ_FOLDER, START_YEAR)
+    need_to_process = download_files(year_x_quarter, URL_INDEX_PATTERN, DATA_GZ_FOLDER, START_YEAR)
 
-    pdfs, pdfs_merge, keys = read_data(DATA_GZ_FOLDER, DATA_PD_FOLDER, PDF_MERGE_FILE)
+    # If nothing has changed, load the final dataframe
+    if need_to_process or not os.path.exists(PDF_MERGE_10K_FILE):
+        # Process the data
+        pdfs, pdfs_merge, keys = read_data(DATA_GZ_FOLDER, DATA_PD_FOLDER, PDF_MERGE_FILE)
 
-    # Filter only 10k or 10k/a annual reports
-    pdfs_10k = pdfs_merge[(pdfs_merge['Form Type'] == '10-K') | (pdfs_merge['Form Type'] == '10-K/A')]
+        # Filter only 10k or 10k/a annual reports
+        pdfs_10k = pdfs_merge[(pdfs_merge['Form Type'] == '10-K') | (pdfs_merge['Form Type'] == '10-K/A')]
+        pdfs_10k.to_pickle(PDF_MERGE_10K_FILE)
+    else:
+        pdfs_10k = pd.read_pickle(PDF_MERGE_10K_FILE)
 
     # Download annual reports
     download_annual_reports(pdfs_10k, DATA_AR_FOLDER, NAME_FILE_PER_CIK, URL_ROOT)
