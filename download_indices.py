@@ -167,7 +167,12 @@ def download_annual_reports(pdfs_10k, DATA_AR_FOLDER, NAME_FILE_PER_CIK, URL_ROO
         filename = os.path.join(folder, url[url.rfind('/') + 1:])
 
         if not os.path.exists(filename):
-            urllib.request.urlretrieve(url, filename)
+            try:
+                urllib.request.urlretrieve(url, filename)
+            except:
+                print('ERR: {}, {} couldn\'t be downloaded'.format(url), filename)
+                if os.path.exists(filename):
+                    os.remove(filename)
 
 
 if __name__ == "__main__":
