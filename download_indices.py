@@ -149,10 +149,11 @@ if __name__ == "__main__":
     START_YEAR = 1993
     START_QUARTER = 1
 
+    # Compute indices for the years and quarters
     year_x_quarter = compute_year_quarter(START_YEAR, START_QUARTER)
 
+    # Download all indices related to the determined years and quarters
     download_files(year_x_quarter, URL_INDEX_PATTERN, DATA_GZ_FOLDER, START_YEAR)
 
     pdfs, pdfs_merge, keys = read_data(DATA_GZ_FOLDER, DATA_PD_FOLDER, PDF_MERGE_FILE)
 
-    print(pdfs_merge.head(5))
