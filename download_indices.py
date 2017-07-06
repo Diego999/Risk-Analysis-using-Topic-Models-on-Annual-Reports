@@ -136,10 +136,40 @@ def read_data(DATA_GZ_FOLDER, DATA_PD_FOLDER, PDF_MERGE_FILE):
 
     return pdfs, pdfs_merged, keys
 
+
+def download_annual_reports(pdfs_10k, DATA_AR_FOLDER, NAME_FILE_PER_CIK, URL_ROOT):
+    if not os.path.isdir(DATA_AR_FOLDER):
+        os.makedirs(DATA_AR_FOLDER)
+
+    # Create CIK folders and also the file containing all the related names
+    for cik, pdf in tqdm.tqdm(pdfs_10k.groupby('CIK'), desc='Creating company folders'):
+        company_names = pdf['Company Name'].unique()
+
+        folder = os.path.join(DATA_AR_FOLDER, cik)
+        if not os.path.isdir(folder):
+            os.mkdir(folder)
+
+        name_file = os.path.join(folder, NAME_FILE_PER_CIK)
+        if not os.path.exists(name_file):
+            with open(name_file, 'w', encoding='utf-8') as fp:
+                for company_name in company_names:
+                    fp.write(company_name + '\n')
+
+    # Download all annual reports
+    for idx, row in tqdm.tqdm(pdfs_10k.iterrows(), desc='Downloading company\' annual reports'):
+        folder = os.path.join(DATA_AR_FOLDER, row['CIK'])
+        url = URL_ROOT + row['File Name']
+        filename = os.path.join(folder, url[url.rfind('/') + 1:])
+
+        if not os.path.exists(filename):
+            urllib.request.urlretrieve(url, filename)
+
+
 if __name__ == "__main__":
     DATA_FOLDER = os.path.join('.', 'data/')
     DATA_GZ_FOLDER = os.path.join(DATA_FOLDER, 'gz')
     DATA_PD_FOLDER = os.path.join(DATA_FOLDER, 'pd')
+    DATA_AR_FOLDER = os.path.join(DATA_FOLDER, 'ar')
     DATA_COMPANY_FOLDER = os.path.join(DATA_FOLDER, 'company')
 
     URL_ROOT = 'https://www.sec.gov/Archives/'
@@ -148,6 +178,9 @@ if __name__ == "__main__":
 
     START_YEAR = 1993
     START_QUARTER = 1
+
+    CIK_COMPANY_NAME_SEPARATOR = '_'
+    NAME_FILE_PER_CIK = 'names'
 
     # Compute indices for the years and quarters
     year_x_quarter = compute_year_quarter(START_YEAR, START_QUARTER)
@@ -159,3 +192,6 @@ if __name__ == "__main__":
 
     # Filter only 10k or 10k/a annual reports
     pdfs_10k = pdfs_merge[(pdfs_merge['Form Type'] == '10-K') | (pdfs_merge['Form Type'] == '10-K/A')]
+
+    # Download annual reports
+    download_annual_reports(pdfs_10k, DATA_AR_FOLDER, NAME_FILE_PER_CIK, URL_ROOT)
