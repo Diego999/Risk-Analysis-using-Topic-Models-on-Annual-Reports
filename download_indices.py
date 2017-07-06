@@ -141,7 +141,9 @@ if __name__ == "__main__":
     DATA_GZ_FOLDER = os.path.join(DATA_FOLDER, 'gz')
     DATA_PD_FOLDER = os.path.join(DATA_FOLDER, 'pd')
     DATA_COMPANY_FOLDER = os.path.join(DATA_FOLDER, 'company')
-    URL_INDEX_PATTERN = 'https://www.sec.gov/Archives/edgar/full-index/{year}/QTR{quarter}/company.gz'
+
+    URL_ROOT = 'https://www.sec.gov/Archives/'
+    URL_INDEX_PATTERN = URL_ROOT + 'edgar/full-index/{year}/QTR{quarter}/company.gz'
     PDF_MERGE_FILE = os.path.join(DATA_PD_FOLDER, 'merged_pds.pd')
 
     START_YEAR = 1993
