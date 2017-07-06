@@ -46,7 +46,7 @@ def download_files(year_x_quarter, URL_INDEX_PATTERN, DATA_GZ_FOLDER, START_YEAR
         del year_x_quarter[idx]
 
     # Download GZ files
-    for y, q in tqdm.tqdm(year_x_quarter, desc='Downloading company indices'):
+    for y, q in tqdm.tqdm(year_x_quarter, desc='Downloading company\' indices'):
         url = URL_INDEX_PATTERN.format(quarter=q, year=y)
         filename = os.path.join(DATA_GZ_FOLDER, '{year}_{quarter}.gz'.format(year=y, quarter=q))
 
