@@ -157,3 +157,5 @@ if __name__ == "__main__":
 
     pdfs, pdfs_merge, keys = read_data(DATA_GZ_FOLDER, DATA_PD_FOLDER, PDF_MERGE_FILE)
 
+    # Filter only 10k or 10k/a annual reports
+    pdfs_10k = pdfs_merge[(pdfs_merge['Form Type'] == '10-K') | (pdfs_merge['Form Type'] == '10-K/A')]
