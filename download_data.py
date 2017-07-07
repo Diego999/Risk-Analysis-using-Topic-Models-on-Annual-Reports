@@ -6,7 +6,8 @@ import tqdm
 import gzip
 import pandas as pd
 import re
-
+import config
+from time import gmtime, strftime
 
 def clean_row(row):
     return row.decode('utf-8', 'ignore').strip()
@@ -142,7 +143,7 @@ def read_data(DATA_GZ_FOLDER, DATA_PD_FOLDER, PDF_MERGE_FILE):
     return pdfs, pdfs_merged, keys
 
 
-def download_annual_reports(pdfs_10k, DATA_AR_FOLDER, NAME_FILE_PER_CIK, URL_ROOT):
+def download_annual_reports(pdfs_10k, DATA_AR_FOLDER, NAME_FILE_PER_CIK, URL_ROOT, LOG_FILE):
     if not os.path.isdir(DATA_AR_FOLDER):
         os.makedirs(DATA_AR_FOLDER)
 
@@ -156,7 +157,7 @@ def download_annual_reports(pdfs_10k, DATA_AR_FOLDER, NAME_FILE_PER_CIK, URL_ROO
 
         name_file = os.path.join(folder, NAME_FILE_PER_CIK)
         if not os.path.exists(name_file):
-            with open(name_file, 'w', encoding='utf-8') as fp:
+            with open(name_file, 'a', encoding='utf-8') as fp:
                 for company_name in company_names:
                     fp.write(company_name + '\n')
 
@@ -170,44 +171,31 @@ def download_annual_reports(pdfs_10k, DATA_AR_FOLDER, NAME_FILE_PER_CIK, URL_ROO
             try:
                 urllib.request.urlretrieve(url, filename)
             except:
-                print('ERR: {}, {} couldn\'t be downloaded'.format(url, filename))
+                with open(LOG_FILE, 'a') as fp:
+                    fp.write('{}: {}, {} couldn\'t be downloaded\n'.format(strftime("%d-%m-%Y %H:%M:%S", gmtime()), url, filename))
                 if os.path.exists(filename):
                     os.remove(filename)
 
-
 if __name__ == "__main__":
-    DATA_FOLDER = os.path.join('.', 'data/')
-    DATA_GZ_FOLDER = os.path.join(DATA_FOLDER, 'gz')
-    DATA_PD_FOLDER = os.path.join(DATA_FOLDER, 'pd')
-    DATA_AR_FOLDER = os.path.join(DATA_FOLDER, 'ar')
-    DATA_COMPANY_FOLDER = os.path.join(DATA_FOLDER, 'company')
-
-    URL_ROOT = 'https://www.sec.gov/Archives/'
-    URL_INDEX_PATTERN = URL_ROOT + 'edgar/full-index/{year}/QTR{quarter}/company.gz'
-    PDF_MERGE_FILE = os.path.join(DATA_PD_FOLDER, 'merged_pds.pd')
-    PDF_MERGE_10K_FILE = os.path.join(DATA_PD_FOLDER, 'merged_10k_pds.pd')
-    START_YEAR = 1993
-    START_QUARTER = 1
-
-    CIK_COMPANY_NAME_SEPARATOR = '_'
-    NAME_FILE_PER_CIK = 'names'
+    if os.path.exists(config.LOG_FILE):
+        os.remove(config.LOG_FILE)
 
     # Compute indices for the years and quarters
-    year_x_quarter = compute_year_quarter(START_YEAR, START_QUARTER)
+    year_x_quarter = compute_year_quarter(config.START_YEAR, config.START_QUARTER)
 
     # Download all indices related to the determined years and quarters
-    need_to_process = download_files(year_x_quarter, URL_INDEX_PATTERN, DATA_GZ_FOLDER, START_YEAR)
+    need_to_process = download_files(year_x_quarter, config.URL_INDEX_PATTERN, config.DATA_GZ_FOLDER, config.START_YEAR)
 
     # If nothing has changed, load the final dataframe
-    if need_to_process or not os.path.exists(PDF_MERGE_10K_FILE):
+    if need_to_process or not os.path.exists(config.PDF_MERGE_10K_FILE):
         # Process the data
-        pdfs, pdfs_merge, keys = read_data(DATA_GZ_FOLDER, DATA_PD_FOLDER, PDF_MERGE_FILE)
+        pdfs, pdfs_merge, keys = read_data(config.DATA_GZ_FOLDER, config.DATA_PD_FOLDER, config.PDF_MERGE_FILE)
 
         # Filter only 10k or 10k/a annual reports
         pdfs_10k = pdfs_merge[(pdfs_merge['Form Type'] == '10-K') | (pdfs_merge['Form Type'] == '10-K/A')]
-        pdfs_10k.to_pickle(PDF_MERGE_10K_FILE)
+        pdfs_10k.to_pickle(config.PDF_MERGE_10K_FILE)
     else:
-        pdfs_10k = pd.read_pickle(PDF_MERGE_10K_FILE)
+        pdfs_10k = pd.read_pickle(config.PDF_MERGE_10K_FILE)
 
     # Download annual reports
-    download_annual_reports(pdfs_10k, DATA_AR_FOLDER, NAME_FILE_PER_CIK, URL_ROOT)
+    download_annual_reports(pdfs_10k, config.DATA_AR_FOLDER, config.NAME_FILE_PER_CIK, config.URL_ROOT, config.LOG_FILE)
