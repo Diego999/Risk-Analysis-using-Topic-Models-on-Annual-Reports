@@ -164,7 +164,7 @@ def download_annual_reports(pdfs_10k, DATA_AR_FOLDER, NAME_FILE_PER_CIK, URL_ROO
                     fp.write(company_name + '\n')
 
     # Download all annual reports
-    if config.MULTITHREADED:
+    if config.MULTITHREADING:
         print('Downloading company\' annual reports')
         num_cores = multiprocessing.cpu_count()
         Parallel(n_jobs=num_cores)(delayed(_download_annual_reports)(DATA_AR_FOLDER, LOG_FILE, URL_ROOT, row) for idx, row in pdfs_10k.iterrows())

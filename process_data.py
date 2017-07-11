@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     cik_folders = [x[0] for x in os.walk(config.DATA_AR_FOLDER)][1:]
 
-    if config.MULTITHREAD:
+    if config.MULTITHREADING:
         num_cores = multiprocessing.cpu_count()
         Parallel(n_jobs=num_cores)(delayed(process_folder)(folder) for folder in reversed(cik_folders))
     else:

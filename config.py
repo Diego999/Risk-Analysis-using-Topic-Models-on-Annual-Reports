@@ -1,6 +1,6 @@
 import os
 
-MULTITHREADED = True
+MULTITHREADING = True
 
 DATA_FOLDER = os.path.join('.', 'data/')
 DATA_GZ_FOLDER = os.path.join(DATA_FOLDER, 'gz')
