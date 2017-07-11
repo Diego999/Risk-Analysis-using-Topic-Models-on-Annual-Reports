@@ -29,7 +29,6 @@ def process_folder(folder):
             print(extracted_fiscal_year_end)
             info[config.KEY_FISCAL_YEAR_END] = parser_utils.clean_fiscal_year_end(extracted_fiscal_year_end, year_annual_report)
             print(info[config.KEY_FISCAL_YEAR_END])
-            assert info[config.KEY_FISCAL_YEAR_END] is not None
 
 
 if __name__ == "__main__":
