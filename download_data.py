@@ -27,8 +27,7 @@ def compute_year_quarter(START_YEAR, START_QUARTER):
 
     # The first report is not among the first quarter
     if START_QUARTER > 1:
-        year_x_quarter = year_x_quarter[START_QUARTER-1:
-        ]
+        year_x_quarter = year_x_quarter[START_QUARTER-1:]
     return year_x_quarter
 
 
@@ -191,8 +190,8 @@ if __name__ == "__main__":
         # Process the data
         pdfs, pdfs_merge, keys = read_data(config.DATA_GZ_FOLDER, config.DATA_PD_FOLDER, config.PDF_MERGE_FILE)
 
-        # Filter only 10k or 10k/a annual reports
-        pdfs_10k = pdfs_merge[(pdfs_merge['Form Type'] == '10-K') | (pdfs_merge['Form Type'] == '10-K/A')]
+        # Filter only 10k annual reports
+        pdfs_10k = pdfs_merge[(pdfs_merge['Form Type'] == config.FORM_TYPE)]
         pdfs_10k.to_pickle(config.PDF_MERGE_10K_FILE)
     else:
         pdfs_10k = pd.read_pickle(config.PDF_MERGE_10K_FILE)
