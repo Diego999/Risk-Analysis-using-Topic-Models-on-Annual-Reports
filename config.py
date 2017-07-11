@@ -1,5 +1,7 @@
 import os
 
+MULTITHREADED = True
+
 DATA_FOLDER = os.path.join('.', 'data/')
 DATA_GZ_FOLDER = os.path.join(DATA_FOLDER, 'gz')
 DATA_PD_FOLDER = os.path.join(DATA_FOLDER, 'pd')

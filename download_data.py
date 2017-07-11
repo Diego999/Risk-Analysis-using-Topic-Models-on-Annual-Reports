@@ -8,6 +8,9 @@ import pandas as pd
 import re
 import config
 from time import gmtime, strftime
+from joblib import Parallel, delayed
+import multiprocessing
+
 
 def clean_row(row):
     return row.decode('utf-8', 'ignore').strip()
@@ -161,19 +164,29 @@ def download_annual_reports(pdfs_10k, DATA_AR_FOLDER, NAME_FILE_PER_CIK, URL_ROO
                     fp.write(company_name + '\n')
 
     # Download all annual reports
-    for idx, row in tqdm.tqdm(pdfs_10k.iterrows(), desc='Downloading company\' annual reports'):
-        folder = os.path.join(DATA_AR_FOLDER, row['CIK'])
-        url = URL_ROOT + row['File Name']
-        filename = os.path.join(folder, url[url.rfind('/') + 1:])
+    if config.MULTITHREADED:
+        print('Downloading company\' annual reports')
+        num_cores = multiprocessing.cpu_count()
+        Parallel(n_jobs=num_cores)(delayed(_download_annual_reports)(DATA_AR_FOLDER, LOG_FILE, URL_ROOT, row) for idx, row in pdfs_10k.iterrows())
+    else:
+        for idx, row in tqdm.tqdm(pdfs_10k.iterrows(), desc='Downloading company\' annual reports'):
+            _download_annual_reports(DATA_AR_FOLDER, LOG_FILE, URL_ROOT, row)
 
-        if not os.path.exists(filename):
-            try:
-                urllib.request.urlretrieve(url, filename)
-            except:
-                with open(LOG_FILE, 'a') as fp:
-                    fp.write('{}: {}, {} couldn\'t be downloaded\n'.format(strftime("%d-%m-%Y %H:%M:%S", gmtime()), url, filename))
-                if os.path.exists(filename):
-                    os.remove(filename)
+
+def _download_annual_reports(DATA_AR_FOLDER, LOG_FILE, URL_ROOT, row):
+    folder = os.path.join(DATA_AR_FOLDER, row['CIK'])
+    url = URL_ROOT + row['File Name']
+    filename = os.path.join(folder, url[url.rfind('/') + 1:])
+    if not os.path.exists(filename):
+        try:
+            urllib.request.urlretrieve(url, filename)
+        except:
+            with open(LOG_FILE, 'a') as fp:
+                fp.write('{}: {}, {} couldn\'t be downloaded\n'.format(strftime("%d-%m-%Y %H:%M:%S", gmtime()), url,
+                                                                       filename))
+            if os.path.exists(filename):
+                os.remove(filename)
+
 
 if __name__ == "__main__":
     if os.path.exists(config.LOG_FILE):
