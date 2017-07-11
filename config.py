@@ -21,7 +21,7 @@ NAME_FILE_PER_CIK = 'names'
 LOG_FILE = 'log.txt'
 
 # Key words to look up in the headers
-KEY_WORDS_LOOKUP_FISCAL_YEAR_END = ['FISCAL YEAR END', 'fiscal year ended', 'fiscal period ended']
+KEY_WORDS_LOOKUP_FISCAL_YEAR_END = ['FISCAL YEAR END', 'fiscal year ended', 'fiscal period ended', 'year ended']
 
 KEY_COMPANY_NAME = 'company_name'
 KEY_CIK = 'cik'
