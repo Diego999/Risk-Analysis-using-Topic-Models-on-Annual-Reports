@@ -19,3 +19,14 @@ CIK_COMPANY_NAME_SEPARATOR = '_'
 NAME_FILE_PER_CIK = 'names'
 
 LOG_FILE = 'log.txt'
+
+# Key words to look up in the headers
+KEY_WORDS_LOOKUP_FISCAL_YEAR_END = ['FISCAL YEAR END', 'fiscal year ended', 'fiscal period ended']
+
+KEY_COMPANY_NAME = 'company_name'
+KEY_CIK = 'cik'
+KEY_FISCAL_YEAR_END = 'fiscal_year_end'
+KEY_RELEASED_DATE = 'release_date'
+
+KEY_MAPPING = {k:KEY_FISCAL_YEAR_END for k in KEY_WORDS_LOOKUP_FISCAL_YEAR_END}
+KEY_MAPPING_UNIQUE = {v:k for k,v in KEY_MAPPING.items()}
