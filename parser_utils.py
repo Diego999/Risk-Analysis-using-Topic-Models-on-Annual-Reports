@@ -28,7 +28,9 @@ def clean_fiscal_year_end(fiscal_year_end, year_of_annual_report):
 def extract_fiscal_end_year(buffer):
     val = None
 
-    buffer_cleaned = [clean_phrase(l) for l in buffer]
+    buffer_cleaned = []
+    for l in buffer: # To support multi-threading
+        buffer_cleaned.append(clean_phrase(l))
 
     # First attempt to extract the fiscal end year
     extracted_fiscal_year = False
