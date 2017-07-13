@@ -28,7 +28,7 @@ def process_folder(folder):
         if extracted_release_date is not None:
             info[config.KEY_RELEASED_DATE] = parser_utils.clean_date(extracted_release_date, year_annual_report)
         else:
-            with open('release_missing.txt', 'a') as fp:
+            with open(config.LOG_RELEASE_DATE_MISSING, 'a', encoding='utf-8') as fp:
                 fp.write(annual_report + '\n')
 
         # Extract & clean fiscal year end
@@ -42,7 +42,7 @@ def process_folder(folder):
                 prefix = 'FIXED '
                 info[config.KEY_FISCAL_YEAR_END] = parser_utils.clean_date('31 12 ' + str(year_annual_report))
 
-            with open('fiscal_missing.txt', 'a') as fp:
+            with open(config.LOG_FISCAL_YEAR_END_MISSING, 'a', encoding='utf-8') as fp:
                 fp.write(prefix + annual_report + '\n')
 
 if __name__ == "__main__":

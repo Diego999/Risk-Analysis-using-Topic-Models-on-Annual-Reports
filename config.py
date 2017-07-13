@@ -21,6 +21,8 @@ CIK_COMPANY_NAME_SEPARATOR = '_'
 NAME_FILE_PER_CIK = 'names'
 
 LOG_FILE = 'log.txt'
+LOG_FISCAL_YEAR_END_MISSING = 'missing_fiscal_year_end.txt'
+LOG_RELEASE_DATE_MISSING = 'missing_release_date.txt'
 
 # Key words to look up in the headers
 KEY_WORDS_LOOKUP_FISCAL_YEAR_END = ['FISCAL YEAR END', 'CONFORMED PERIOD OF REPORT', 'fiscal year ended', 'fiscal period ended', 'year ended']
