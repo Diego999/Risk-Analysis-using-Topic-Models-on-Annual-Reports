@@ -23,7 +23,8 @@ NAME_FILE_PER_CIK = 'names'
 LOG_FILE = 'log.txt'
 
 # Key words to look up in the headers
-KEY_WORDS_LOOKUP_FISCAL_YEAR_END = ['FISCAL YEAR END', 'fiscal year ended', 'fiscal period ended', 'year ended']
+KEY_WORDS_LOOKUP_FISCAL_YEAR_END = ['FISCAL YEAR END', 'CONFORMED PERIOD OF REPORT', 'fiscal year ended', 'fiscal period ended', 'year ended']
+KEY_WORDS_LOOKUP_RELEASE_DATE_END = ['FILED AS OF DATE', 'Outstanding at', 'DATE', 'thereunto duly authorized', 'undersigned, thereunto duly', 'in the capacities indicated on the', 'thereto duly authorized', 'has been signed below on behalf', 'unto duly authorized', 'consent of independent auditors', 'duly authorized', 'pursuant to the requirements of', 'aggregate market value of the common stock']
 
 KEY_COMPANY_NAME = 'company_name'
 KEY_CIK = 'cik'

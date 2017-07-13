@@ -21,15 +21,29 @@ def process_folder(folder):
         with open(annual_report, 'r', encoding='utf-8') as fp:
             buffer = fp.readlines()
 
-        # Extract & clean fiscal year end
         year_annual_report = annual_report.split('-')[-2]
-        print(annual_report)
+
+        # Extract & clean release date
+        extracted_release_date = parser_utils.extract_release_date(buffer)
+        if extracted_release_date is not None:
+            info[config.KEY_RELEASED_DATE] = parser_utils.clean_date(extracted_release_date, year_annual_report)
+        else:
+            with open('release_missing.txt', 'a') as fp:
+                fp.write(annual_report + '\n')
+
+        # Extract & clean fiscal year end
         extracted_fiscal_year_end = parser_utils.extract_fiscal_end_year(buffer)
         if extracted_fiscal_year_end is not None:
-            print(extracted_fiscal_year_end)
-            info[config.KEY_FISCAL_YEAR_END] = parser_utils.clean_fiscal_year_end(extracted_fiscal_year_end, year_annual_report)
-            print(info[config.KEY_FISCAL_YEAR_END])
+            info[config.KEY_FISCAL_YEAR_END] = parser_utils.clean_date(extracted_fiscal_year_end, year_annual_report)
+        else:
+            prefix = ''
+            # Infer the date
+            if extracted_release_date is not None:
+                prefix = 'FIXED '
+                info[config.KEY_FISCAL_YEAR_END] = parser_utils.clean_date('31 12 ' + str(year_annual_report))
 
+            with open('fiscal_missing.txt', 'a') as fp:
+                fp.write(prefix + annual_report + '\n')
 
 if __name__ == "__main__":
     if not os.path.isdir(config.DATA_AR_FOLDER):
@@ -41,5 +55,5 @@ if __name__ == "__main__":
         num_cores = multiprocessing.cpu_count()
         Parallel(n_jobs=num_cores)(delayed(process_folder)(folder) for folder in reversed(cik_folders))
     else:
-        for folder in tqdm.tqdm(reversed(cik_folders), desc="Extract data from annual reports"):
+        for i, folder in tqdm.tqdm(enumerate(reversed(cik_folders)), desc="Extract data from annual reports"):
             process_folder(folder)
