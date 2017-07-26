@@ -14,7 +14,8 @@ The script will create the followings folders:
     - `data/ar/CIK/[names/*.txt]`: `names` contain all the company names associated with the CIK.
     - `txt` files are the annual reports.
 
-At the end, the overall size is around 10 GB.
+At the end, the overall size is around 750 GB.
+
 # Issues/Pull Requests/Feedbacks
 
 Don't hesitate to contact for any feedback or create issues/pull requests.
