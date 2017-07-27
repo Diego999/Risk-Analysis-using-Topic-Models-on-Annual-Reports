@@ -5,6 +5,7 @@ import parser_utils
 import tqdm
 from joblib import Parallel, delayed
 import multiprocessing
+import random
 
 
 def process_folder(folder):
@@ -46,14 +47,17 @@ def process_folder(folder):
                 fp.write(prefix + annual_report + '\n')
 
 if __name__ == "__main__":
+    random.seed(0)
+
     if not os.path.isdir(config.DATA_AR_FOLDER):
         print('ERR: {} does not exist'.format(config.DATA_AR_FOLDER))
 
     cik_folders = [x[0] for x in os.walk(config.DATA_AR_FOLDER)][1:]
+    random.shuffle(cik_folders) # Better separate work load
 
     if config.MULTITHREADING:
         num_cores = multiprocessing.cpu_count()
-        Parallel(n_jobs=num_cores)(delayed(process_folder)(folder) for folder in reversed(cik_folders))
+        Parallel(n_jobs=num_cores)(delayed(process_folder)(folder) for folder in cik_folders)
     else:
-        for i, folder in tqdm.tqdm(enumerate(reversed(cik_folders)), desc="Extract data from annual reports"):
+        for i, folder in tqdm.tqdm(enumerate(cik_folders), desc="Extract data from annual reports"):
             process_folder(folder)
