@@ -24,7 +24,7 @@ LOG_FILE = 'log.txt'
 LOG_FISCAL_YEAR_END_MISSING = 'missing_fiscal_year_end.txt'
 LOG_RELEASE_DATE_MISSING = 'missing_release_date.txt'
 
-# Key words to look up in the headers
+# Key words to look up
 KEY_WORDS_LOOKUP_FISCAL_YEAR_END = ['FISCAL YEAR END', 'CONFORMED PERIOD OF REPORT', 'fiscal year ended', 'fiscal period ended', 'year ended']
 KEY_WORDS_LOOKUP_RELEASE_DATE_END = ['FILED AS OF DATE', 'Outstanding at', 'DATE', 'thereunto duly authorized', 'undersigned, thereunto duly', 'in the capacities indicated on the', 'thereto duly authorized', 'has been signed below on behalf', 'unto duly authorized', 'consent of independent auditors', 'duly authorized', 'pursuant to the requirements of', 'aggregate market value of the common stock']
 
@@ -35,3 +35,7 @@ KEY_RELEASED_DATE = 'release_date'
 
 KEY_MAPPING = {k:KEY_FISCAL_YEAR_END for k in KEY_WORDS_LOOKUP_FISCAL_YEAR_END}
 KEY_MAPPING_UNIQUE = {v:k for k,v in KEY_MAPPING.items()}
+
+# Parsing options
+MAX_EMPTY_LINES = 3
+MIN_LENGTH_LINE = 4

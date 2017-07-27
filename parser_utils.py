@@ -1,6 +1,8 @@
 import config
 from dateutil.parser import parse
 from datetime import datetime
+from bs4 import BeautifulSoup
+import re
 
 
 # Clean some char in a phrase
@@ -180,3 +182,99 @@ def _extract_date_util(line, kw, split_date=False):
                 empty = len(extracted_date) == 0
 
     return extracted_succeed, val
+
+
+#============GLOBAL CLEANING================
+pattern_trim = re.compile(r'\s+')
+pattern_html_tags = re.compile('<.*?>')
+
+
+def remove_special_chars(string):
+    return string.replace(',', '').replace('(', '').replace(')', '').replace('[', '').replace(']', '').replace('*', '')
+
+
+def is_number(string):
+    try:
+        float(remove_special_chars(string))
+        return True
+    except:
+        return False
+
+
+def is_date(string):
+    try:
+        parse(remove_special_chars(string))
+        return True
+    except:
+        return False
+
+
+def check_empty_lines(buffer, idx, before=True, nb_lines=config.MAX_EMPTY_LINES):
+    coeff = -1 if before else 1
+    for j in range(1, nb_lines + 1):
+        if buffer[idx + coeff*j] != '':
+            return False
+
+    return True
+
+
+def clean_raw_text(buffer):
+    text = ''.join(buffer)
+    b = BeautifulSoup(text, "lxml")
+    text = b.get_text().split('\n')
+
+    return text
+
+
+def parse_text(raw_text):
+    buffer = []
+    nb_empty_lines = 0
+    for l in raw_text:
+        l = re.sub(pattern_trim, ' ', l.strip())
+        l_lower = l.lower()
+
+        if l == '' or re.search(pattern_html_tags, l) is not None or l in ['$', '%', '*', '#'] or is_number(l) or is_date(l) or len(l) <= config.MIN_LENGTH_LINE or l_lower in ['part i', 'part ii', 'part iii', 'part iv', 'description', 'table of contents', 'exhibit no.']:
+            l = ''
+            nb_empty_lines += 1
+        else:
+            nb_empty_lines = 0
+
+        if nb_empty_lines <= config.MAX_EMPTY_LINES:
+            buffer.append(l)
+
+    return buffer
+
+
+def remove_alone_sentence(buffer):
+    buffer_temp = []
+    for i in range(config.MAX_EMPTY_LINES, len(buffer) - config.MAX_EMPTY_LINES):
+        previous = check_empty_lines(buffer, i, before=True, nb_lines=config.MAX_EMPTY_LINES)
+        after = check_empty_lines(buffer, i, before=False, nb_lines=config.MAX_EMPTY_LINES)
+
+        if not previous or not after:
+            buffer_temp.append(buffer[i])
+
+    return buffer_temp
+
+
+def remove_excess_empty_lines(buffer, nb_lines=config.MAX_EMPTY_LINES):
+    # Remove beginning and end empty lines
+    while buffer[0] == '':
+        buffer = buffer[1:]
+    while buffer[-1] == '':
+        buffer = buffer[:-1]
+
+    buffer_final = []
+    for i in range(0, len(buffer) - nb_lines):
+        if not check_empty_lines(buffer, i - 1, before=False, nb_lines=nb_lines + 1):
+            buffer_final.append(buffer[i])
+
+    return buffer_final
+
+
+def clean_file(buffer):
+    raw_text = clean_raw_text(buffer)
+    buffer = parse_text(raw_text)
+    buffer = remove_alone_sentence(buffer)
+    buffer = remove_excess_empty_lines(buffer)
+    return buffer

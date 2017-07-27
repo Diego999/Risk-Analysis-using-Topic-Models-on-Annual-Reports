@@ -20,8 +20,7 @@ def process_folder(folder):
         buffer = []
         info = {config.KEY_COMPANY_NAME: names, config.KEY_CIK: cik}
         with open(annual_report, 'r', encoding='utf-8') as fp:
-            buffer = fp.readlines()
-
+            buffer = parser_utils.clean_file(fp.readlines())
         year_annual_report = annual_report.split('-')[-2]
 
         # Extract & clean release date
