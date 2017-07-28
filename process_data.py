@@ -51,7 +51,7 @@ if __name__ == "__main__":
     if not os.path.isdir(config.DATA_AR_FOLDER):
         print('ERR: {} does not exist'.format(config.DATA_AR_FOLDER))
 
-    cik_folders = [x[0] for x in os.walk(config.DATA_AR_FOLDER)][1:]
+    cik_folders = [d for d in os.listdir(config.DATA_AR_FOLDER) if os.path.isdir(os.path.join(config.DATA_AR_FOLDER, d))]
     random.shuffle(cik_folders) # Better separate work load
 
     if config.MULTITHREADING:
