@@ -3,8 +3,9 @@ import config
 import glob
 import parser_utils
 import tqdm
-from joblib import Parallel, delayed
+from multiprocessing import Process
 import random
+import pymysql
 
 
 def load_annual_report(annual_report):
@@ -14,7 +15,7 @@ def load_annual_report(annual_report):
         for l in fp:
             buffer.append(l)
 
-    if not os.path.exists(annual_report_clean):
+    if os.path.exists(annual_report_clean):
         buffer = parser_utils.clean_file(buffer)
         if len(buffer) > 0:
             with open(annual_report_clean, 'w', encoding='utf-8') as fp:
@@ -24,7 +25,30 @@ def load_annual_report(annual_report):
     return buffer
 
 
-def process_folder(folder):
+def process_folder_multithread(folders):
+    connection = pymysql.connect(host='localhost',
+                                 user=os.getenv('MYSQL_USER'),
+                                 password=os.getenv('MYSQL_PASSWORD'),
+                                 db='SEC',
+                                 charset='utf8',
+                                 cursorclass=pymysql.cursors.DictCursor)
+
+    for folder in folders:
+        process_folder(folder, connection)
+
+    connection.close()
+
+
+def update_key_item(info, val, key1, key2, key3):
+    if len(val) > 0:
+        info[key1] = val[0]
+        if len(val) > 1:
+            info[key2] = val[1]
+        if len(val) > 2:
+            info[key3] = ', '.join(val[2:])
+
+
+def process_folder(folder, connection):
     cik = str(folder[folder.rfind('/') + 1:])
     names = []
     with open(os.path.join(folder, config.NAME_FILE_PER_CIK), 'r', encoding='utf-8') as fp:
@@ -34,35 +58,63 @@ def process_folder(folder):
 
     for annual_report in reversed(annual_reports):
         buffer = load_annual_report(annual_report)
-        flag_bad_parsing = False
+        info = {config.KEY_FILE: cik + '/' + annual_report[annual_report.rfind('/') + 1:], config.KEY_COMPANY_NAME: ', '.join(names), config.KEY_CIK: cik, config.KEY_PARSING: False}
         if len(buffer) > 0:
-            info = {config.KEY_COMPANY_NAME: names, config.KEY_CIK: cik}
             year_annual_report = annual_report.split('-')[-2]
 
             # Extract & clean release date
             extracted_release_date = parser_utils.extract_release_date(buffer)
-            info[config.KEY_RELEASED_DATE] = parser_utils.clean_date(extracted_release_date, year_annual_report)
+            if extracted_release_date is not None:
+                extracted_release_date = parser_utils.clean_date(extracted_release_date, year_annual_report)
+                if extracted_release_date is not None:
+                    info[config.KEY_RELEASED_DATE] = extracted_release_date
 
             # Extract & clean fiscal year end
             extracted_fiscal_year_end = parser_utils.extract_fiscal_end_year(buffer)
             if extracted_fiscal_year_end is not None:
-                info[config.KEY_FISCAL_YEAR_END] = parser_utils.clean_date(extracted_fiscal_year_end, year_annual_report)
+                extracted_fiscal_year_end = parser_utils.clean_date(extracted_fiscal_year_end, year_annual_report)
+                if extracted_fiscal_year_end is not None:
+                    info[config.KEY_FISCAL_YEAR_END] = extracted_fiscal_year_end
             elif extracted_release_date is not None: # Infer the date
-                info[config.KEY_FISCAL_YEAR_END] = parser_utils.clean_date('31 12 ' + str(year_annual_report))
+                extracted_fiscal_year_end = parser_utils.clean_date('31 12 ' + str(year_annual_report))
+                if extracted_fiscal_year_end is not None:
+                    info[config.KEY_FISCAL_YEAR_END] = extracted_fiscal_year_end
 
             # Extract beginning of sections
-            val_1a, val_1b, val_2, val_7, val_7a, val_8, val_9 = [], [], [], [], [], [], []
             vals = parser_utils.extract_items(buffer)
             if vals is not None:
                 val_1a, val_1b, val_2, val_7, val_7a, val_8, val_9 = vals
+                update_key_item(info, val_1a, config.KEY_ITEM_1A_1, config.KEY_ITEM_1A_2, config.KEY_ITEM_1A_3)
+                update_key_item(info, val_1b, config.KEY_ITEM_1B_1, config.KEY_ITEM_1B_2, config.KEY_ITEM_1B_3)
+                update_key_item(info, val_2, config.KEY_ITEM_2_1, config.KEY_ITEM_2_2, config.KEY_ITEM_2_3)
+                update_key_item(info, val_7, config.KEY_ITEM_7_1, config.KEY_ITEM_7_2, config.KEY_ITEM_7_3)
+                update_key_item(info, val_7a, config.KEY_ITEM_7A_1, config.KEY_ITEM_7A_2, config.KEY_ITEM_7A_3)
+                update_key_item(info, val_8, config.KEY_ITEM_8_1, config.KEY_ITEM_8_2, config.KEY_ITEM_8_3)
+                update_key_item(info, val_9, config.KEY_ITEM_9_1, config.KEY_ITEM_9_2, config.KEY_ITEM_9_3)
             else:
-                flag_bad_parsing = True
+                info[config.KEY_PARSING] = True
         else:
-            flag_bad_parsing = True
+            info[config.KEY_PARSING] = True
 
-        # TODO Input data in MySQL
-        if flag_bad_parsing:
-            print(flag_bad_parsing, extracted_release_date, extracted_fiscal_year_end, val_1a, val_1b, val_2, val_7, val_7a, val_8, val_9)
+        with connection.cursor() as cursor:
+            sql = "INSERT INTO `10k` ({}) VALUES ({})"
+            keys = []
+            vals = []
+            for key, val in info.items():
+                keys.append('`' + key + '`')
+                vals.append(val)
+            sql = sql.format(', '.join(keys), ', '.join(['%s']*len(keys)))
+            cursor.execute(sql, tuple(vals))
+
+    connection.commit()
+
+
+# Yield successive n-sized chunks from l.
+def chunks(l, n):
+    res = []
+    for i in range(0, len(l), n):
+        res.append(l[i:i + n])
+    return res
 
 
 if __name__ == "__main__":
@@ -75,7 +127,23 @@ if __name__ == "__main__":
     random.shuffle(cik_folders) # Better separate work load
 
     if config.MULTITHREADING:
-        Parallel(n_jobs=config.NUM_CORES)(delayed(process_folder)(folder) for folder in cik_folders)
+        folders = chunks(cik_folders, 1 + int(len(cik_folders)/config.NUM_CORES))
+        procs = []
+        for i in range(config.NUM_CORES):
+            procs.append(Process(target=process_folder_multithread, args=(folders[i],)))
+            procs[-1].start()
+
+        for p in procs:
+            p.join()
     else:
+        connection = pymysql.connect(host='localhost',
+                                     user=os.getenv('MYSQL_USER'),
+                                     password=os.getenv('MYSQL_PASSWORD'),
+                                     db='SEC',
+                                     charset='utf8',
+                                     cursorclass=pymysql.cursors.DictCursor)
+
         for folder in tqdm.tqdm(cik_folders, desc="Extract data from annual reports"):
-            process_folder(folder)
+            process_folder(folder, connection)
+
+        connection.close()
