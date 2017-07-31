@@ -33,7 +33,18 @@ def clean_date(fiscal_year_end, year_of_annual_report):
     elif year == datetime.now().year: # Year hasn't been found in the pattern and has been 2017 instead
         year = year_of_annual_report
 
-    return "{} {} {}".format(day, month, year) # Non-American format
+    day = str(day).zfill(2)
+    month = str(month).zfill(2)
+    year = str(year)
+    if len(year) < 4:
+        year = ('19' if int(year) > (datetime.now().year-2000) else '20') + year
+
+    try:
+        res = datetime.strptime('{}-{}-{}'.format(day, month, year), '%d-%m-%Y')
+    except:
+        res = None
+
+    return res
 
 
 #============ITEMS================
