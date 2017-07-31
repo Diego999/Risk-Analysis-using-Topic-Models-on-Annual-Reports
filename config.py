@@ -4,6 +4,9 @@ import multiprocessing
 MULTITHREADING = True
 NUM_CORES = multiprocessing.cpu_count()
 
+EXTENSION_10K_REPORT = 'txt'
+EXTENSION_CLEAN_PREPROCESSING = 'txt_clean'
+
 DATA_FOLDER = os.path.join('.', 'data/')
 DATA_GZ_FOLDER = os.path.join(DATA_FOLDER, 'gz')
 DATA_PD_FOLDER = os.path.join(DATA_FOLDER, 'pd')

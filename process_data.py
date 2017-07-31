@@ -4,8 +4,23 @@ import glob
 import parser_utils
 import tqdm
 from joblib import Parallel, delayed
-import multiprocessing
 import random
+
+
+def load_annual_report(annual_report):
+    buffer = []
+    annual_report_clean = annual_report.replace(config.EXTENSION_10K_REPORT, config.EXTENSION_CLEAN_PREPROCESSING)
+    with open(annual_report_clean if os.path.exists(annual_report_clean) else annual_report, 'r', encoding='utf-8') as fp:
+        for l in fp:
+            buffer.append(l)
+
+    if not os.path.exists(annual_report_clean):
+        buffer = parser_utils.clean_file(buffer)
+        with open(annual_report_clean, 'w', encoding='utf-8') as fp:
+            for l in buffer:
+                fp.write(l + '\n')
+
+    return buffer
 
 
 def process_folder(folder):
@@ -14,14 +29,12 @@ def process_folder(folder):
     with open(os.path.join(folder, config.NAME_FILE_PER_CIK), 'r', encoding='utf-8') as fp:
         for name in fp:
             names.append(name.strip())
-    annual_reports = glob.glob(folder + '/*.txt')
+    annual_reports = glob.glob(folder + '/*.' + config.EXTENSION_10K_REPORT)
 
     for annual_report in reversed(annual_reports):
-        buffer = []
         info = {config.KEY_COMPANY_NAME: names, config.KEY_CIK: cik}
-        with open(annual_report, 'r', encoding='utf-8') as fp:
-            buffer = parser_utils.clean_file(fp.readlines())
         year_annual_report = annual_report.split('-')[-2]
+        buffer = load_annual_report(annual_report)
 
         # Extract & clean release date
         extracted_release_date = parser_utils.extract_release_date(buffer)
@@ -92,5 +105,5 @@ if __name__ == "__main__":
     if config.MULTITHREADING:
         Parallel(n_jobs=config.NUM_CORES)(delayed(process_folder)(folder) for folder in cik_folders)
     else:
-        for i, folder in tqdm.tqdm(enumerate(cik_folders), desc="Extract data from annual reports"):
+        for folder in tqdm.tqdm(cik_folders, desc="Extract data from annual reports"):
             process_folder(folder)
