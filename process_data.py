@@ -55,8 +55,7 @@ if __name__ == "__main__":
     random.shuffle(cik_folders) # Better separate work load
 
     if config.MULTITHREADING:
-        num_cores = multiprocessing.cpu_count()
-        Parallel(n_jobs=num_cores)(delayed(process_folder)(folder) for folder in cik_folders)
+        Parallel(n_jobs=config.NUM_CORES)(delayed(process_folder)(folder) for folder in cik_folders)
     else:
         for i, folder in tqdm.tqdm(enumerate(cik_folders), desc="Extract data from annual reports"):
             process_folder(folder)

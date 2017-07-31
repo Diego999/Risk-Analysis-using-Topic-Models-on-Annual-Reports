@@ -1,6 +1,8 @@
 import os
+import multiprocessing
 
 MULTITHREADING = True
+NUM_CORES = multiprocessing.cpu_count()
 
 DATA_FOLDER = os.path.join('.', 'data/')
 DATA_GZ_FOLDER = os.path.join(DATA_FOLDER, 'gz')
