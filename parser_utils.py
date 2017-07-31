@@ -26,7 +26,7 @@ def clean_date(fiscal_year_end, year_of_annual_report):
     day, month, year = date.day, date.month, date.year
 
     # Case where 1201 has been considered as a year rather than 1st of December
-    if year < config.START_YEAR:
+    if year < config.START_YEAR - 1: # Fiscal year may end in 1992 !
         month = fiscal_year_end[:2]
         day = fiscal_year_end[2:4]
         year = year_of_annual_report
