@@ -45,7 +45,7 @@ def update_key_item(info, val, key1, key2, key3):
         if len(val) > 1:
             info[key2] = val[1]
         if len(val) > 2:
-            info[key3] = ', '.join(val[2:])
+            info[key3] = ', '.join([str(v) for v in val[2:]])
 
 
 def process_folder(folder, connection):
