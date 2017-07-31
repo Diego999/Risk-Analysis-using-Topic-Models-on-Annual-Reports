@@ -37,6 +37,60 @@ def clean_date(fiscal_year_end, year_of_annual_report):
 
 
 #============ITEMS================
+def extract_items(buffer):
+    vals = None
+    try:
+        val_1a, val_1b, val_2, val_7, val_7a, val_8, val_9 = extract_items_util(buffer)
+
+        # Check if there is only 1 occurence starting by "Item XXX" or "Title"
+        val_1a = simplify_occurences(val_1a, config.KEY_WORDS_ITEM_1A, buffer)
+        val_1b = simplify_occurences(val_1b, config.KEY_WORDS_ITEM_1B, buffer)
+        val_2 = simplify_occurences(val_2, config.KEY_WORDS_ITEM_2, buffer)
+        val_7 = simplify_occurences(val_7, config.KEY_WORDS_ITEM_7, buffer)
+        val_7a = simplify_occurences(val_7a, config.KEY_WORDS_ITEM_7A, buffer)
+        val_8 = simplify_occurences(val_8, config.KEY_WORDS_ITEM_8, buffer)
+        val_9 = simplify_occurences(val_9, config.KEY_WORDS_ITEM_9, buffer)
+
+        if sum([(1 if len(l) > 1 else 0) for l in
+                [val_1a, val_1b, val_2, val_7, val_7a, val_8, val_9]]) != 0:  # Not a unique number per items
+            total_length = 0
+            while total_length != len(val_1a + val_1b + val_2 + val_7 + val_7a + val_8 + val_9):
+                total_length = len(val_1a + val_1b + val_2 + val_7 + val_7a + val_8 + val_9)
+
+                # Remove table of contents refs and before
+                val_1a, val_1b, val_2, val_7, val_7a, val_8, val_9 = remove_toc_and_before(
+                    [val_1a, val_1b, val_2, val_7, val_7a, val_8, val_9])
+
+                # If there are still several indices, let's try to disambiguate them
+                val_1a = disambiguate(val_1a, config.KEY_WORDS_ITEM_1A, buffer)
+                val_1b = disambiguate(val_1b, config.KEY_WORDS_ITEM_1B, buffer)
+                val_2 = disambiguate(val_2, config.KEY_WORDS_ITEM_2, buffer)
+                val_7 = disambiguate(val_7, config.KEY_WORDS_ITEM_7, buffer)
+                val_7a = disambiguate(val_7a, config.KEY_WORDS_ITEM_7A, buffer)
+                val_8 = disambiguate(val_8, config.KEY_WORDS_ITEM_8, buffer)
+                val_9 = disambiguate(val_9, config.KEY_WORDS_ITEM_9, buffer)
+
+                # Remove continuous elements to keep only the first one
+                val_1a = remove_continuous(val_1a)
+                val_1b = remove_continuous(val_1b)
+                val_2 = remove_continuous(val_2)
+                val_7 = remove_continuous(val_7)
+                val_7a = remove_continuous(val_7a)
+                val_8 = remove_continuous(val_8)
+                val_9 = remove_continuous(val_9)
+
+        # If there are still more indices per item
+        if len(val_1a) > 1 or len(val_1b) > 1 or len(val_2) > 1 or len(val_7) > 1 or len(val_7a) > 1 or len(val_8) > 1 or len(val_9) > 1:
+            val_1a, val_1b, val_2, val_7, val_7a, val_8, val_9 = remove_first_ref_previous_item([val_1a, val_1b, val_2, val_7, val_7a, val_8, val_9])
+            val_1a, val_1b, val_2, val_7, val_7a, val_8, val_9 = remove_last_ref_next_item([val_1a, val_1b, val_2, val_7, val_7a, val_8, val_9])
+
+        vals = [val_1a, val_1b, val_2, val_7, val_7a, val_8, val_9]
+    except:
+        pass
+
+    return vals
+
+
 def simplify_occurences(indices, kws, buffer):
     if len(indices) < 1:
         return indices
@@ -195,7 +249,7 @@ def find_kw_in_line(kws, idx, line, container):
     return False
 
 
-def extract_items(buffer):
+def extract_items_util(buffer):
     val_1a, val_1b, val_2, val_7, val_7a, val_8, val_9 = [], [], [], [], [], [], []
     buffer_cleaned = []
     for l in buffer:  # To support multi-threading
@@ -468,8 +522,11 @@ def remove_excess_empty_lines(buffer, nb_lines=config.MAX_EMPTY_LINES):
 
 
 def clean_file(buffer):
-    raw_text = clean_raw_text(buffer)
-    buffer = parse_text(raw_text)
-    buffer = remove_alone_sentence(buffer)
-    buffer = remove_excess_empty_lines(buffer)
-    return buffer
+    try:
+        raw_text = clean_raw_text(buffer)
+        buffer = parse_text(raw_text)
+        buffer = remove_alone_sentence(buffer)
+        buffer = remove_excess_empty_lines(buffer)
+        return buffer
+    except:
+        return []
