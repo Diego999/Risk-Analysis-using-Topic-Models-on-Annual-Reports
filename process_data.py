@@ -15,7 +15,7 @@ def load_annual_report(annual_report):
         for l in fp:
             buffer.append(l)
 
-    if os.path.exists(annual_report_clean):
+    if not os.path.exists(annual_report_clean):
         buffer = parser_utils.clean_file(buffer)
         if len(buffer) > 0:
             with open(annual_report_clean, 'w', encoding='utf-8') as fp:
