@@ -76,7 +76,7 @@ def process_folder(folder, connection):
                 if extracted_fiscal_year_end is not None:
                     info[config.KEY_FISCAL_YEAR_END] = extracted_fiscal_year_end
             elif extracted_release_date is not None: # Infer the date
-                extracted_fiscal_year_end = parser_utils.clean_date('31 12 ' + str(year_annual_report))
+                extracted_fiscal_year_end = parser_utils.clean_date('31 12 ' + str(year_annual_report), year_annual_report)
                 if extracted_fiscal_year_end is not None:
                     info[config.KEY_FISCAL_YEAR_END] = extracted_fiscal_year_end
 
