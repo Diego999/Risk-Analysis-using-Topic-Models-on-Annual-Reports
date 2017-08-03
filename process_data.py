@@ -57,7 +57,10 @@ def process_folder(folder, connection):
     annual_reports = glob.glob(folder + '/*.' + config.EXTENSION_10K_REPORT)
 
     for annual_report in reversed(annual_reports):
-        buffer = load_annual_report(annual_report)
+        try:
+            buffer = load_annual_report(annual_report)
+        except:
+            continue
         info = {config.KEY_FILE: cik + '/' + annual_report[annual_report.rfind('/') + 1:], config.KEY_COMPANY_NAME: ', '.join(names), config.KEY_CIK: cik, config.KEY_PARSING: False}
         if len(buffer) > 0:
             year_annual_report = annual_report.split('-')[-2]

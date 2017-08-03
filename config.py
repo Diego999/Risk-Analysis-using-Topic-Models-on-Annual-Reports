@@ -1,7 +1,7 @@
 import os
 import multiprocessing
 
-MULTITHREADING = True
+MULTITHREADING = False
 NUM_CORES = multiprocessing.cpu_count()
 
 EXTENSION_10K_REPORT = 'txt'
