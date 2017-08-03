@@ -113,7 +113,15 @@ def simplify_occurences(indices, kws, buffer):
     final_indices = []
     for idx in indices:
         for kw in kws:
-            if len(buffer_cleaned[idx]) >= len(kw) and buffer_cleaned[idx].startswith(kw) and 'continued' not in buffer_cleaned[idx] and 'cont' not in buffer_cleaned[idx] and (('continued' not in buffer_cleaned[idx + 1]) if idx + 1 < len(buffer_cleaned) else True) and buffer_cleaned[idx-1].strip() == '' and '"' not in buffer_cleaned[idx] and '\'' not in buffer_cleaned[idx][-3:] and buffer_cleaned[idx][len(kw)] != '.':
+            if len(buffer_cleaned[idx]) >= len(kw) \
+                    and buffer_cleaned[idx].startswith(kw) \
+                    and 'continued' not in buffer_cleaned[idx] \
+                    and 'cont' not in buffer_cleaned[idx] \
+                    and (('continued' not in buffer_cleaned[idx + 1]) if idx + 1 < len(buffer_cleaned) else True) \
+                    and buffer_cleaned[idx-1].strip() == '' \
+                    and '"' not in buffer_cleaned[idx] \
+                    and '\'' not in buffer_cleaned[idx][-3:] \
+                    and ((buffer_cleaned[idx][len(kw)] != '.') if len(buffer_cleaned[idx]) > len(kw) else True):
                 # Avoid duplicates in header
                 different = True
                 for i in final_indices:
