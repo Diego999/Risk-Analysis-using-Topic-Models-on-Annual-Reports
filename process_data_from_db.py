@@ -75,6 +75,4 @@ if __name__ == "__main__":
         for annual_report in tqdm.tqdm(bad_parsed_10k_reports, desc="Extract data from badly parsed annual reports"):
             process_folder(annual_report, connection)
 
-    connection.close()
-
-
+        connection.close()
