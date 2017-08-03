@@ -8,6 +8,15 @@ import random
 import pymysql
 
 
+def create_mysql_connection():
+    return pymysql.connect(host='localhost',
+                             user=os.getenv('MYSQL_USER'),
+                             password=os.getenv('MYSQL_PASSWORD'),
+                             db='SEC',
+                             charset='utf8',
+                             cursorclass=pymysql.cursors.DictCursor)
+
+
 def load_annual_report(annual_report):
     buffer = []
     annual_report_clean = annual_report.replace(config.EXTENSION_10K_REPORT, config.EXTENSION_CLEAN_PREPROCESSING)
@@ -26,12 +35,7 @@ def load_annual_report(annual_report):
 
 
 def process_folder_multithread(folders):
-    connection = pymysql.connect(host='localhost',
-                                 user=os.getenv('MYSQL_USER'),
-                                 password=os.getenv('MYSQL_PASSWORD'),
-                                 db='SEC',
-                                 charset='utf8',
-                                 cursorclass=pymysql.cursors.DictCursor)
+    connection = create_mysql_connection()
 
     for folder in folders:
         process_folder(folder, connection)
@@ -146,12 +150,7 @@ if __name__ == "__main__":
         for p in procs:
             p.join()
     else:
-        connection = pymysql.connect(host='localhost',
-                                     user=os.getenv('MYSQL_USER'),
-                                     password=os.getenv('MYSQL_PASSWORD'),
-                                     db='SEC',
-                                     charset='utf8',
-                                     cursorclass=pymysql.cursors.DictCursor)
+        connection = create_mysql_connection()
 
         for folder in tqdm.tqdm(cik_folders, desc="Extract data from annual reports"):
             process_folder(folder, connection)
