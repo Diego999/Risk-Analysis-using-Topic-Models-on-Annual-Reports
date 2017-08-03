@@ -52,7 +52,7 @@ KEY_ITEM_7_1,  KEY_ITEM_7_2, KEY_ITEM_7_3 = 'item_7_start_1', 'item_7_start_2', 
 KEY_ITEM_7A_1,  KEY_ITEM_7A_2, KEY_ITEM_7A_3 = 'item_7a_start_1', 'item_7a_start_2', 'item_7a_start_3'
 KEY_ITEM_8_1,  KEY_ITEM_8_2, KEY_ITEM_8_3 = 'item_8_start_1', 'item_8_start_2', 'item_8_start_3'
 KEY_ITEM_9_1,  KEY_ITEM_9_2, KEY_ITEM_9_3 = 'item_9_start_1', 'item_9_start_2', 'item_9_start_3'
-KEY_BADLY_PARSING = 'bad_parsing'
+KEY_BADLY_PARSED = 'badly_parsed'
 
 KEY_MAPPING = {k:KEY_FISCAL_YEAR_END for k in KEY_WORDS_LOOKUP_FISCAL_YEAR_END}
 KEY_MAPPING_UNIQUE = {v:k for k,v in KEY_MAPPING.items()}

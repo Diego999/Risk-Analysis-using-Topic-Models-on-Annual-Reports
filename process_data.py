@@ -53,7 +53,7 @@ def update_key_item(info, val, key1, key2, key3):
 
 
 def extract(buffer, cik, annual_report, names):
-    info = {config.KEY_FILE: cik + '/' + annual_report[annual_report.rfind('/') + 1:], config.KEY_COMPANY_NAME: ', '.join(names), config.KEY_CIK: cik, config.KEY_BADLY_PARSING: False}
+    info = {config.KEY_FILE: cik + '/' + annual_report[annual_report.rfind('/') + 1:], config.KEY_COMPANY_NAME: ', '.join(names), config.KEY_CIK: cik, config.KEY_BADLY_PARSED: False}
     if len(buffer) > 0:
         year_annual_report = annual_report.split('-')[-2]
 
@@ -87,9 +87,9 @@ def extract(buffer, cik, annual_report, names):
             update_key_item(info, val_8, config.KEY_ITEM_8_1, config.KEY_ITEM_8_2, config.KEY_ITEM_8_3)
             update_key_item(info, val_9, config.KEY_ITEM_9_1, config.KEY_ITEM_9_2, config.KEY_ITEM_9_3)
         else:
-            info[config.KEY_BADLY_PARSING] = True
+            info[config.KEY_BADLY_PARSED] = True
     else:
-        info[config.KEY_BADLY_PARSING] = True
+        info[config.KEY_BADLY_PARSED] = True
 
     return info
 
