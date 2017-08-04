@@ -40,7 +40,7 @@ def download_files(year_x_quarter, URL_INDEX_PATTERN, DATA_GZ_FOLDER, START_YEAR
 
     # Don't download already downloaded files
     for id, gz_file in enumerate(glob.glob(DATA_GZ_FOLDER + '/*.gz')):
-        y, q = [int(x) for x in gz_file[gz_file.rfind('/') + 1 : gz_file.rfind('.')].split('_')]
+        y, q = [int(x) for x in gz_file[gz_file.rfind('/') + 1: gz_file.rfind('.')].split('_')]
         idx = (y - START_YEAR) * 4 + q - 1
         idx -= id # Removing an element in the list will translate all indices
 
