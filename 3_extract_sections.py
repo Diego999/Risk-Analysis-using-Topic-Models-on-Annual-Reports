@@ -95,9 +95,10 @@ def work_process(list_1a, list_7, list_7a):
 if __name__ == "__main__":
     list_1a, list_7, list_7a = fetch_data()
 
-    for folder in [config.DATA_1A_FOLDER, config.DATA_7_FOLDER, config.DATA_7A_FOLDER]
-        if not os.path.isdir(folder):
-            os.makedirs(folder)
+    for folder in [config.DATA_1A_FOLDER, config.DATA_7_FOLDER, config.DATA_7A_FOLDER]:
+        if os.path.isdir(folder):
+            os.rmdir(folder)
+        os.makedirs(folder)
 
     if config.MULTITHREADING:
         list_1a = utils.chunks(list_1a, 1 + int(len(list_1a) / config.NUM_CORES))
