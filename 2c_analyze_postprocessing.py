@@ -1,6 +1,6 @@
-import config
-import process_data
 import numpy as np
+config = __import__('0_config')
+process_data = __import__('2a_process_data')
 
 
 def hist(vals, bin_width):

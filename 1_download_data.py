@@ -6,10 +6,9 @@ import tqdm
 import gzip
 import pandas as pd
 import re
-import config
 from time import gmtime, strftime
 from joblib import Parallel, delayed
-import multiprocessing
+config = __import__('0_config')
 
 
 def clean_row(row):

@@ -1,9 +1,9 @@
-import config
 from dateutil.parser import parse
 from datetime import datetime
 from bs4 import BeautifulSoup
 import re
 import distance
+config = __import__('0_config')
 
 
 # Clean some chars in a phrase

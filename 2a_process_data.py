@@ -1,11 +1,11 @@
 import os
-import config
 import glob
 import parser_utils
 import tqdm
 from multiprocessing import Process
 import random
 import pymysql
+config = __import__('0_config')
 
 
 def create_mysql_connection():
