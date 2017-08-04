@@ -1,6 +1,7 @@
 import os
 import utils
 from multiprocessing import Process
+import shutil
 config = __import__('0_config')
 process_data = __import__('2a_process_data')
 
@@ -97,7 +98,7 @@ if __name__ == "__main__":
 
     for folder in [config.DATA_1A_FOLDER, config.DATA_7_FOLDER, config.DATA_7A_FOLDER]:
         if os.path.isdir(folder):
-            os.rmdir(folder)
+            shutil.rmtree(folder)
         os.makedirs(folder)
 
     if config.MULTITHREADING:
