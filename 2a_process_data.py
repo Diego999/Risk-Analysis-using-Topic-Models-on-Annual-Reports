@@ -4,17 +4,8 @@ import parser_utils
 import tqdm
 from multiprocessing import Process
 import random
-import pymysql
+import utils
 config = __import__('0_config')
-
-
-def create_mysql_connection(all_in_mem=True):
-    return pymysql.connect(host='localhost',
-                             user=os.getenv('MYSQL_USER'),
-                             password=os.getenv('MYSQL_PASSWORD'),
-                             db='SEC',
-                             charset='utf8',
-                             cursorclass=pymysql.cursors.DictCursor if all_in_mem else pymysql.cursors.SSDictCursor)
 
 
 def load_annual_report(annual_report):
@@ -35,7 +26,7 @@ def load_annual_report(annual_report):
 
 
 def process_folder_multithread(folders):
-    connection = create_mysql_connection()
+    connection = utils.create_mysql_connection()
 
     for folder in folders:
         process_folder(folder, connection)
@@ -123,14 +114,6 @@ def process_folder(folder, connection):
     connection.commit()
 
 
-# Yield successive n-sized chunks from l.
-def chunks(l, n):
-    res = []
-    for i in range(0, len(l), n):
-        res.append(l[i:i + n])
-    return res
-
-
 if __name__ == "__main__":
     random.seed(0)
 
@@ -141,7 +124,7 @@ if __name__ == "__main__":
     random.shuffle(cik_folders) # Better separate work load
 
     if config.MULTITHREADING:
-        folders = chunks(cik_folders, 1 + int(len(cik_folders)/config.NUM_CORES))
+        folders = utils.chunks(cik_folders, 1 + int(len(cik_folders)/config.NUM_CORES))
         procs = []
         for i in range(config.NUM_CORES):
             procs.append(Process(target=process_folder_multithread, args=(folders[i],)))
@@ -150,7 +133,7 @@ if __name__ == "__main__":
         for p in procs:
             p.join()
     else:
-        connection = create_mysql_connection()
+        connection = utils.create_mysql_connection()
 
         for folder in tqdm.tqdm(cik_folders, desc="Extract data from annual reports"):
             process_folder(folder, connection)

@@ -2,12 +2,13 @@ import os
 import tqdm
 from multiprocessing import Process
 import random
+import utils
 process_data = __import__('2a_process_data')
 config = __import__('0_config')
 
 
 def process_folder_multithread(annual_reports):
-    connection = process_data.create_mysql_connection()
+    connection = utils.create_mysql_connection()
 
     for annual_report in annual_reports:
         process_folder(annual_report, connection)

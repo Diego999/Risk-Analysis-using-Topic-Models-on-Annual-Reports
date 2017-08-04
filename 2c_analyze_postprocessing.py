@@ -1,4 +1,5 @@
 import numpy as np
+import utils
 config = __import__('0_config')
 process_data = __import__('2a_process_data')
 
@@ -25,7 +26,7 @@ def hist(vals, bin_width):
 
 
 if __name__ == "__main__":
-    connection = process_data.create_mysql_connection()
+    connection = utils.create_mysql_connection()
     # Total
     with connection.cursor() as cursor:
         sql = "SELECT COUNT(*) AS total FROM `10k`"

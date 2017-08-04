@@ -49,7 +49,7 @@ def process_row(row, agg_method, offset_limit, line_to_read_if_no_end_offset, ke
 
 
 def fetch_data():
-    connection = process_data.create_mysql_connection(all_in_mem=False)
+    connection = utils.create_mysql_connection(all_in_mem=False)
 
     list_1a, list_7, list_7a = [], [], []
     with connection.cursor() as cursor:
