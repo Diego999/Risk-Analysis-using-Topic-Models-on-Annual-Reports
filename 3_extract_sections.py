@@ -1,4 +1,6 @@
 import os
+import utils
+from multiprocessing import Process
 config = __import__('0_config')
 process_data = __import__('2a_process_data')
 
@@ -87,8 +89,25 @@ def store_data(elems, folder):
                 fp.write(l)
 
 
-if __name__ == "__main__":
-    list_1a, list_7, list_7a = fetch_data()
+def work_process(list_1a, list_7, list_7a):
     store_data(list_1a, config.DATA_1A_FOLDER)
     store_data(list_7, config.DATA_7_FOLDER)
     store_data(list_7a, config.DATA_7A_FOLDER)
+
+
+if __name__ == "__main__":
+    list_1a, list_7, list_7a = fetch_data()
+
+    if config.MULTITHREADING:
+        list_1a_ = utils.chunks(list_1a, 1 + int(len(list_1a) / config.NUM_CORES))
+        list_7_ = utils.chunks(list_7, 1 + int(len(list_7) / config.NUM_CORES))
+        list_7a_= utils.chunks(list_7a, 1 + int(len(list_7a) / config.NUM_CORES))
+        procs = []
+        for i in range(config.NUM_CORES):
+            procs.append(Process(target=work_process, args=(list_1a_[i], list_7_[i], list_7a_[i])))
+            procs[-1].start()
+
+        for p in procs:
+            p.join()
+    else:
+        work_process(list_1a, list_7, list_7a)
