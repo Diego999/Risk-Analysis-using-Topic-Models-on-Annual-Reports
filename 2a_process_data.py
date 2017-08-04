@@ -8,13 +8,13 @@ import pymysql
 config = __import__('0_config')
 
 
-def create_mysql_connection():
+def create_mysql_connection(all_in_mem=True):
     return pymysql.connect(host='localhost',
                              user=os.getenv('MYSQL_USER'),
                              password=os.getenv('MYSQL_PASSWORD'),
                              db='SEC',
                              charset='utf8',
-                             cursorclass=pymysql.cursors.DictCursor)
+                             cursorclass=pymysql.cursors.DictCursor if all_in_mem else pymysql.cursors.SSDictCursor)
 
 
 def load_annual_report(annual_report):
