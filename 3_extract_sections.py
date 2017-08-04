@@ -76,13 +76,13 @@ def store_data(elems, folder):
         os.makedirs(folder)
 
     for elem in elems:
-        filename_in = os.path.join(os.path.join(config.DATA_AR_FOLDER, str(elem['cik'])), elem['file'].replace(config.EXTENSION_10K_REPORT, config.EXTENSION_CLEAN_PREPROCESSING))
+        filename_in = os.path.join(os.path.join(config.DATA_AR_FOLDER, str(elem['cik'])), elem['file'].replace(config.EXTENSION_10K_REPORT, config.EXTENSION_CLEAN_PREPROCESSING).replace('/', config.CIK_COMPANY_NAME_SEPARATOR))
         buffer = []
         with open(filename_in, 'r', encoding='utf-8') as fp:
             for l in fp:
                 buffer.append(l)
 
-        buffer = [elem['header'] + '\n'] + buffer[elem['start']:elem['stop']]
+        buffer = [elem['header'] + '\n'] + buffer[elem['start']:elem['end']]
         filename_out = os.path.join(folder, elem['file'].replace('/', config.CIK_COMPANY_NAME_SEPARATOR))
         with open(filename_out, 'w', encoding='utf-8') as fp:
             for l in buffer:
@@ -99,12 +99,12 @@ if __name__ == "__main__":
     list_1a, list_7, list_7a = fetch_data()
 
     if config.MULTITHREADING:
-        list_1a_ = utils.chunks(list_1a, 1 + int(len(list_1a) / config.NUM_CORES))
-        list_7_ = utils.chunks(list_7, 1 + int(len(list_7) / config.NUM_CORES))
-        list_7a_= utils.chunks(list_7a, 1 + int(len(list_7a) / config.NUM_CORES))
+        list_1a = utils.chunks(list_1a, 1 + int(len(list_1a) / config.NUM_CORES))
+        list_7 = utils.chunks(list_7, 1 + int(len(list_7) / config.NUM_CORES))
+        list_7a = utils.chunks(list_7a, 1 + int(len(list_7a) / config.NUM_CORES))
         procs = []
         for i in range(config.NUM_CORES):
-            procs.append(Process(target=work_process, args=(list_1a_[i], list_7_[i], list_7a_[i])))
+            procs.append(Process(target=work_process, args=(list_1a[i], list_7[i], list_7a[i])))
             procs[-1].start()
 
         for p in procs:
