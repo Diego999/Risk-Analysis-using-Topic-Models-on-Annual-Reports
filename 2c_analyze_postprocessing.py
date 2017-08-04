@@ -68,13 +68,13 @@ if __name__ == "__main__":
         count = cursor.fetchall()[0]['total']
     print('There are {} files with a “1a Risk Factors” section ({:.2f}%)'.format(count, 100.0*float(count)/total))
     with connection.cursor() as cursor:
-        sql = "SELECT COUNT(*) as total FROM `10k` WHERE {} is not NULL and ({} is NULL and {} is NULL)".format(config.KEY_ITEM_1A_1, config.KEY_ITEM_1B_1, config.KEY_ITEM_2_1)
+        sql = "SELECT COUNT(*) as total FROM `10k` WHERE {} is not NULL and ({} is NULL and {} is NULL and {} is NULL)".format(config.KEY_ITEM_1A_1, config.KEY_ITEM_1B_1, config.KEY_ITEM_2_1, config.KEY_ITEM_2_2)
         cursor.execute(sql)
         count2 = cursor.fetchall()[0]['total']
     print('Among which {} are unextractable ({:.2f}%)'.format(count2, 100.0*float(count2)/count))
     print('Distribution of the length')
     with connection.cursor() as cursor:
-        sql = "SELECT * FROM `10k` WHERE {} is not NULL and ({} is not NULL or {} is not NULL)".format(config.KEY_ITEM_1A_1, config.KEY_ITEM_1B_1, config.KEY_ITEM_2_1)
+        sql = "SELECT * FROM `10k` WHERE {} is not NULL and ({} is not NULL or {} is not NULL or {} is not NULL)".format(config.KEY_ITEM_1A_1, config.KEY_ITEM_1B_1, config.KEY_ITEM_2_1, config.KEY_ITEM_2_2)
         cursor.execute(sql)
         vals = []
         wrong_parsing = 0
@@ -83,6 +83,8 @@ if __name__ == "__main__":
                 vals.append(row[config.KEY_ITEM_1B_1] - row[config.KEY_ITEM_1A_1])
             elif row[config.KEY_ITEM_2_1] is not None and row[config.KEY_ITEM_2_1] > row[config.KEY_ITEM_1A_1]:
                 vals.append(row[config.KEY_ITEM_2_1] - row[config.KEY_ITEM_1A_1])
+            elif row[config.KEY_ITEM_2_2] is not None and row[config.KEY_ITEM_2_2] > row[config.KEY_ITEM_1A_1]:
+                vals.append(row[config.KEY_ITEM_2_2] - row[config.KEY_ITEM_1A_1])
             else:
                 if wrong_parsing < 5:
                     print('\t sample badly parsed: ' + ' '.join([k + ':' + str(v) for k, v in row.items() if 't_2' not in k and '_3' not in k and '_9' not in k and 'date' not in k and 'badly' not in k and 'cik' not in k and 'year' not in k and 'id' not in k]))
@@ -97,13 +99,13 @@ if __name__ == "__main__":
         count = cursor.fetchall()[0]['total']
     print('There are {} files with a "7 Management’s Discussion and Analysis of Financial Condition and Results of Operations” section ({:.2f}%)'.format(count, 100.0*float(count)/total))
     with connection.cursor() as cursor:
-        sql = "SELECT COUNT(*) as total FROM `10k` WHERE {} is not NULL and ({} is NULL and {} is NULL)".format(config.KEY_ITEM_7_1, config.KEY_ITEM_7A_1, config.KEY_ITEM_8_1)
+        sql = "SELECT COUNT(*) as total FROM `10k` WHERE {} is not NULL and ({} is NULL and {} is NULL and {} is NULL)".format(config.KEY_ITEM_7_1, config.KEY_ITEM_7A_1, config.KEY_ITEM_8_1, config.KEY_ITEM_9_1)
         cursor.execute(sql)
         count2 = cursor.fetchall()[0]['total']
     print('Among which {} are unextractable ({:.2f}%)'.format(count2, 100.0*float(count2)/count))
     print('Distribution of the length')
     with connection.cursor() as cursor:
-        sql = "SELECT * FROM `10k` WHERE {} is not NULL and ({} is not NULL or {} is not NULL)".format(config.KEY_ITEM_7_1, config.KEY_ITEM_7A_1, config.KEY_ITEM_8_1)
+        sql = "SELECT * FROM `10k` WHERE {} is not NULL and ({} is not NULL or {} is not NULL or {} is not NULL)".format(config.KEY_ITEM_7_1, config.KEY_ITEM_7A_1, config.KEY_ITEM_8_1, config.KEY_ITEM_9_1)
         cursor.execute(sql)
         vals = []
         wrong_parsing = 0
@@ -112,6 +114,8 @@ if __name__ == "__main__":
                 vals.append(row[config.KEY_ITEM_7A_1] - row[config.KEY_ITEM_7_1])
             elif row[config.KEY_ITEM_8_1] is not None and row[config.KEY_ITEM_8_1] > row[config.KEY_ITEM_7_1]:
                 vals.append(row[config.KEY_ITEM_8_1] - row[config.KEY_ITEM_7_1])
+            elif row[config.KEY_ITEM_9_1] is not None and row[config.KEY_ITEM_9_1] > row[config.KEY_ITEM_7_1]:
+                vals.append(row[config.KEY_ITEM_9_1] - row[config.KEY_ITEM_7_1])
             else:
                 if wrong_parsing < 5:
                     print('\t sample wrong parsing: ' + ' '.join([k + ':' + str(v) for k, v in row.items() if 't_2' not in k and '_3' not in k and '_9' not in k and 'date' not in k and 'badly' not in k and 'cik' not in k and 'year' not in k and 'id' not in k]))
@@ -126,19 +130,23 @@ if __name__ == "__main__":
         count = cursor.fetchall()[0]['total']
     print('There are {} files with a “7A Quantitative and Qualitative Disclosures about Market Risk” section ({:.2f}%)'.format(count, 100.0*float(count)/total))
     with connection.cursor() as cursor:
-        sql = "SELECT COUNT(*) as total FROM `10k` WHERE {} is not NULL and {} is NULL".format(config.KEY_ITEM_7A_1, config.KEY_ITEM_8_1)
+        sql = "SELECT COUNT(*) as total FROM `10k` WHERE {} is not NULL and {} is NULL and {} is NULL and {} is NULL".format(config.KEY_ITEM_7A_1, config.KEY_ITEM_8_1, config.KEY_ITEM_9_1, config.KEY_ITEM_9_2)
         cursor.execute(sql)
         count2 = cursor.fetchall()[0]['total']
     print('Among which {} are unextractable ({:.2f}%)'.format(count2, 100.0*float(count2)/count))
     print('Distribution of the length')
     with connection.cursor() as cursor:
-        sql = "SELECT * FROM `10k` WHERE {} is not NULL and {} is not NULL".format(config.KEY_ITEM_7A_1, config.KEY_ITEM_8_1)
+        sql = "SELECT * FROM `10k` WHERE {} is not NULL and ({} is not NULL or {} is not NULL or {} is not NULL)".format(config.KEY_ITEM_7A_1, config.KEY_ITEM_8_1, config.KEY_ITEM_9_1, config.KEY_ITEM_9_2)
         cursor.execute(sql)
         vals = []
         wrong_parsing = 0
         for row in cursor:
             if row[config.KEY_ITEM_8_1] is not None and row[config.KEY_ITEM_8_1] > row[config.KEY_ITEM_7A_1]:
                 vals.append(row[config.KEY_ITEM_8_1] - row[config.KEY_ITEM_7A_1])
+            elif row[config.KEY_ITEM_9_1] is not None and row[config.KEY_ITEM_9_1] > row[config.KEY_ITEM_7A_1]:
+                vals.append(row[config.KEY_ITEM_9_1] - row[config.KEY_ITEM_7A_1])
+            elif row[config.KEY_ITEM_9_2] is not None and row[config.KEY_ITEM_9_2] > row[config.KEY_ITEM_7A_1]:
+                vals.append(row[config.KEY_ITEM_9_2] - row[config.KEY_ITEM_7A_1])
             else:
                 if wrong_parsing < 5:
                     print('\t sample wrong parsing: ' + ' '.join([k + ':' + str(v) for k, v in row.items() if 't_2' not in k and '_3' not in k and '_9' not in k and 'date' not in k and 'badly' not in k and 'cik' not in k and 'year' not in k and 'id' not in k]))
