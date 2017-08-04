@@ -72,11 +72,8 @@ def fetch_data():
 
 
 def store_data(elems, folder):
-    if not os.path.isdir(folder):
-        os.makedirs(folder)
-
     for elem in elems:
-        filename_in = os.path.join(os.path.join(config.DATA_AR_FOLDER, str(elem['cik'])), elem['file'].replace(config.EXTENSION_10K_REPORT, config.EXTENSION_CLEAN_PREPROCESSING).replace('/', config.CIK_COMPANY_NAME_SEPARATOR))
+        filename_in = os.path.join(config.DATA_AR_FOLDER, elem['file'].replace(config.EXTENSION_10K_REPORT, config.EXTENSION_CLEAN_PREPROCESSING))
         buffer = []
         with open(filename_in, 'r', encoding='utf-8') as fp:
             for l in fp:
@@ -97,6 +94,10 @@ def work_process(list_1a, list_7, list_7a):
 
 if __name__ == "__main__":
     list_1a, list_7, list_7a = fetch_data()
+
+    for folder in [config.DATA_1A_FOLDER, config.DATA_7_FOLDER, config.DATA_7A_FOLDER]
+        if not os.path.isdir(folder):
+            os.makedirs(folder)
 
     if config.MULTITHREADING:
         list_1a = utils.chunks(list_1a, 1 + int(len(list_1a) / config.NUM_CORES))
