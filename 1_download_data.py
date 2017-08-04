@@ -6,8 +6,9 @@ import tqdm
 import gzip
 import pandas as pd
 import re
+import utils
 from time import gmtime, strftime
-from joblib import Parallel, delayed
+from multiprocessing import Process
 config = __import__('0_config')
 
 
@@ -165,11 +166,25 @@ def download_annual_reports(pdfs_10k, DATA_AR_FOLDER, NAME_FILE_PER_CIK, URL_ROO
     # Download all annual reports
     if config.MULTITHREADING:
         print('Downloading company\' annual reports')
-        num_cores = config.NUM_CORES
-        Parallel(n_jobs=num_cores)(delayed(_download_annual_reports)(DATA_AR_FOLDER, LOG_FILE, URL_ROOT, row) for idx, row in pdfs_10k.iterrows())
+        whole_entries = [row for idx, row in pdfs_10k.iterrows()]
+        rows = utils.chunks(whole_entries, 1 + int(len(whole_entries) / config.NUM_CORES))
+        del whole_entries # High memory consumption
+
+        procs = []
+        for i in range(config.NUM_CORES):
+            procs.append(Process(target=_download_annual_reports_process, args=(DATA_AR_FOLDER, LOG_FILE, URL_ROOT, rows[i])))
+            procs[-1].start()
+
+        for p in procs:
+            p.join()
     else:
         for idx, row in tqdm.tqdm(pdfs_10k.iterrows(), desc='Downloading company\' annual reports'):
             _download_annual_reports(DATA_AR_FOLDER, LOG_FILE, URL_ROOT, row)
+
+
+def _download_annual_reports_process(DATA_AR_FOLDER, LOG_FILE, URL_ROOT, rows):
+    for row in rows:
+        _download_annual_reports(DATA_AR_FOLDER, LOG_FILE, URL_ROOT, row)
 
 
 def _download_annual_reports(DATA_AR_FOLDER, LOG_FILE, URL_ROOT, row):
@@ -181,8 +196,7 @@ def _download_annual_reports(DATA_AR_FOLDER, LOG_FILE, URL_ROOT, row):
             urllib.request.urlretrieve(url, filename)
         except:
             with open(LOG_FILE, 'a') as fp:
-                fp.write('{}: {}, {} couldn\'t be downloaded\n'.format(strftime("%d-%m-%Y %H:%M:%S", gmtime()), url,
-                                                                       filename))
+                fp.write('{}: {}, {} couldn\'t be downloaded\n'.format(strftime("%d-%m-%Y %H:%M:%S", gmtime()), url, filename))
             if os.path.exists(filename):
                 os.remove(filename)
 
