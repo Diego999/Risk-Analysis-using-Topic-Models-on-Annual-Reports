@@ -11,6 +11,10 @@ DATA_FOLDER = os.path.join('.', 'data/')
 DATA_GZ_FOLDER = os.path.join(DATA_FOLDER, 'gz')
 DATA_PD_FOLDER = os.path.join(DATA_FOLDER, 'pd')
 DATA_AR_FOLDER = os.path.join(DATA_FOLDER, 'ar')
+DATA_SECTON_FOLDER = os.path.join(DATA_FOLDER, 'sections')
+DATA_1A_FOLDER = os.path.join(DATA_SECTON_FOLDER, '1a_risk_factors')
+DATA_7_FOLDER = os.path.join(DATA_SECTON_FOLDER, '7_managements_discussion_and_analysis_of_financial_condition_and_results_of_operations')
+DATA_7A_FOLDER = os.path.join(DATA_SECTON_FOLDER, '7a_quantitative_and_qualitative_disclosures_about_market_risk')
 
 URL_ROOT = 'https://www.sec.gov/Archives/'
 URL_INDEX_PATTERN = URL_ROOT + 'edgar/full-index/{year}/QTR{quarter}/company.gz'
@@ -27,6 +31,19 @@ NAME_FILE_PER_CIK = 'names'
 LOG_FILE = 'log.txt'
 LOG_FISCAL_YEAR_END_MISSING = 'missing_fiscal_year_end.txt'
 LOG_RELEASE_DATE_MISSING = 'missing_release_date.txt'
+
+READ_SECTION_EVEN_NO_OFFSET_END = False
+ITEM_1A_DIFF_OFFSET_KEEP_BOTH = 500
+ITEM_1A_AGG_METHOD = max
+ITEM_1A_LINES_TO_READ_IF_NO_NEXT_INDEX = 420 # 75 percentile rank
+
+ITEM_7_DIFF_OFFSET_KEEP_BOTH = -1
+ITEM_7_AGG_METHOD = min
+ITEM_7_LINES_TO_READ_IF_NO_NEXT_INDEX = 752 # 75 percentile rank
+
+ITEM_7A_DIFF_OFFSET_KEEP_BOTH = -1
+ITEM_7A_AGG_METHOD = max
+ITEM_7A_LINES_TO_READ_IF_NO_NEXT_INDEX = 49 # 75 percentile rank
 
 # Key words to look up
 KEY_WORDS_LOOKUP_FISCAL_YEAR_END = ['FISCAL YEAR END', 'CONFORMED PERIOD OF REPORT', 'fiscal year ended', 'fiscal period ended', 'year ended']
