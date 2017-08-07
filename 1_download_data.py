@@ -7,6 +7,7 @@ import gzip
 import pandas as pd
 import re
 import utils
+import random
 from time import gmtime, strftime
 from multiprocessing import Process
 config = __import__('0_config')
@@ -168,6 +169,7 @@ def download_annual_reports(pdfs_10k, DATA_AR_FOLDER, NAME_FILE_PER_CIK, URL_ROO
         print('Downloading company\' annual reports')
         whole_entries = [row for idx, row in pdfs_10k.iterrows()]
         rows = utils.chunks(whole_entries, 1 + int(len(whole_entries) / config.NUM_CORES))
+        random.shuffle(rows)  # Better separate work load
         del whole_entries # High memory consumption
 
         procs = []
@@ -202,6 +204,8 @@ def _download_annual_reports(DATA_AR_FOLDER, LOG_FILE, URL_ROOT, row):
 
 
 if __name__ == "__main__":
+    random.seed(0)
+
     if os.path.exists(config.LOG_FILE):
         os.remove(config.LOG_FILE)
 
