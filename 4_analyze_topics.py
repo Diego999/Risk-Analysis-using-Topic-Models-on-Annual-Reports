@@ -35,16 +35,18 @@ def content_relevant(buffer):
 
 pattern_remove_multiple_space = re.compile(r'\s+')
 pattern_remove_new_lines = re.compile(r'\n+')
-pattern_non_char_digit_hash_perc = re.compile(r'[^a-z0-9$% ]+')
+pattern_non_char_digit_hash_perc = re.compile(r'[^a-z0-9#%\' ]+')
 pattern_map_digit_to_hash = re.compile(r'[0-9]+')
 pattern_html_tags = re.compile('<.*?>')
+pattern_multiple_hash = re.compile(r'#+')
 def clean(buffer):
-    text = ''.join(buffer).lower()
-    text = re.sub(pattern_html_tags, '', text)
+    text = ' '.join(buffer).lower()
+    text = re.sub(pattern_html_tags, ' ', text)
+    text = re.sub(pattern_non_char_digit_hash_perc, ' ', text)
+    text = re.sub(pattern_map_digit_to_hash, '#', text)
     text = re.sub(pattern_remove_new_lines, ' ', text)
     text = re.sub(pattern_remove_multiple_space, ' ', text)
-    text = re.sub(pattern_non_char_digit_hash_perc, '', text)
-    text = re.sub(pattern_map_digit_to_hash, '#', text)
+    text = re.sub(pattern_multiple_hash, '#', text)
     return text.strip()
 
 
