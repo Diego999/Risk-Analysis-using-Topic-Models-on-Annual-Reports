@@ -1,6 +1,9 @@
 import os
 import glob
 import re
+import stanford_corenlp_pywrapper
+from scipy.sparse import lil_matrix
+from sklearn.feature_extraction.text import TfidfTransformer
 config = __import__('0_config')
 
 
@@ -80,8 +83,77 @@ def load_and_clean_data(section):
     return filtered_items
 
 
+def lemmatize(data):
+    annotator = stanford_corenlp_pywrapper.CoreNLP(configdict={'annotators': 'tokenize, ssplit, pos, lemma'}, corenlp_jars=[config.SF_NLP_JARS])
+
+    new_data = []
+    for item, text in data:
+        parsed_data = annotator.parse_doc(text)['sentences']
+        assert len(parsed_data) == 1
+        parsed_data = parsed_data[0]
+
+        lemmas = [l.lower() for l in parsed_data['lemmas']]
+
+        new_data.append((item, lemmas))
+
+    return new_data
+
+
+def remove_stopwords(data):
+    stopwords = set()
+    with open(config.STOPWORD_LIST, 'r', encoding='utf-8') as fp:
+        for l in fp:
+            stopwords.add(l.strip().lower())
+
+    new_data = []
+    for item, lemmas in data:
+        new_data.append((item, [l for l in lemmas if l not in stopwords]))
+
+    return new_data
+
+
+def tfidf(data, min_threshold=0.0, max_threshold=1.0):
+    idx = 1
+    lemma_to_idx = {'PAD': 0}
+    for item, lemmas in data:
+        for lemma in lemmas:
+            if lemma not in lemma_to_idx:
+                lemma_to_idx[lemma] = idx
+                idx += 1
+    idx_to_lemma = {v: k for k, v in lemma_to_idx.items()}
+
+    max_lemmas = max([len(lemmas) for item, lemmas in data])
+    X = lil_matrix((len(data), max_lemmas))
+
+    for d in range(len(data)):
+        for i in range(len(data[d][1])):
+            X[d, i] = lemma_to_idx[data[d][1][i]]
+
+    transformer = TfidfTransformer(smooth_idf=False)
+    tfidf_results = transformer.fit_transform(X).toarray()
+
+    new_data = []
+    for i in range(len(data)):
+        new_lemmas = []
+        for lemma, tfidf in zip(data[i][1], tfidf_results[i]):
+            if min_threshold <= tfidf <= max_threshold:
+                new_lemmas.append(lemma)
+        new_data.append((data[i][0], new_lemmas))
+
+    return new_data
+
+
+def preprocess(data):
+    new_data = lemmatize(data)
+    new_data = remove_stopwords(new_data)
+    new_data = tfidf(new_data)
+    return new_data
+
+
 if __name__ == "__main__":
     sections_to_analyze = [config.DATA_1A_FOLDER]
 
     for section in sections_to_analyze:
         data = load_and_clean_data(section)
+
+    data = preprocess(data)
