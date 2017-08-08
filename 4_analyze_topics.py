@@ -73,7 +73,8 @@ def load_and_clean_data(section):
                 fp.write(i + '\t' + l + '\n')
     else:
         with open(final_file, 'r', encoding='utf-8') as fp:
-            for i, l in fp:
+            for l in fp:
+                i, l = l.split('\t')
                 filtered_items.append((i, l.strip()))
 
     return filtered_items
