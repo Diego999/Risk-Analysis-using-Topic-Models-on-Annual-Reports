@@ -62,17 +62,17 @@ def load_and_clean_data(section):
 
             buffer = remove_header_and_multiple_lines(buffer)
             if content_relevant(buffer):
-                filtered_items.append(clean(buffer))
+                filtered_items.append((item, clean(buffer)))
 
         print('{}: Keep {} over {} ({:.2f}%)'.format(section[section.rfind('/') + 1:], len(filtered_items), len(items), float(len(filtered_items)) / len(items) * 100.0))
 
         with open(final_file, 'w', encoding='utf-8') as fp:
-            for l in filtered_items:
-                fp.write(l + '\n')
+            for i, l in filtered_items:
+                fp.write(i + '\t' + l + '\n')
     else:
         with open(final_file, 'r', encoding='utf-8') as fp:
-            for l in fp:
-                filtered_items.append(l.strip())
+            for i, l in fp:
+                filtered_items.append((i, l.strip()))
 
     return filtered_items
 
