@@ -162,8 +162,8 @@ def preprocess(section, data):
         utils.save_pickle(preprocessed_data, preprocessed_data_file)
         utils.save_pickle(lemma_to_idx, dict_lemma_idx_file)
         utils.save_pickle(idx_to_lemma, dict_idx_lemma_file)
-
     else:
+        # Load files
         preprocessed_data = utils.load_pickle(preprocessed_data_file)
         lemma_to_idx = utils.load_pickle(dict_lemma_idx_file)
         idx_to_lemma = utils.load_pickle(dict_idx_lemma_file)
