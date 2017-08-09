@@ -5,7 +5,7 @@ import pickle
 
 def save_pickle(data, filename):
     with open(filename, 'wb') as fp:
-        pickle.dump(data, filename)
+        pickle.dump(data, fp)
 
 
 def load_pickle(filename):
