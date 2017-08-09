@@ -121,32 +121,6 @@ def preprocess_util(data):
     return new_data, lemma_to_idx, idx_to_lemma
 
 
-# Transformation in-place
-def tfidf(data, min_threshold=0.0, max_threshold=1.0):
-    max_lemmas = max([len(lemmas) for item, lemmas in data])
-    X = lil_matrix((len(data), max_lemmas))
-
-    # Fill the matrix X with idx of the lemmas of each report
-    for d in range(len(data)):
-        for i in range(len(data[d][1])):
-            X[d, i] = data[d][1][i]
-
-    transformer = TfidfTransformer(smooth_idf=True)
-    tfidf_results = transformer.fit_transform(X).toarray()
-
-    # Filter lemmas by their tf-idf
-    with open('lemmas.txt', 'w') as fp: # To be removed
-        for i in range(len(data)):
-            new_lemmas = []
-            for lemma, tfidf in zip(data[i][1], tfidf_results[i]):
-                if min_threshold <= tfidf <= max_threshold:
-                    fp.write(idx_to_lemma[lemma] + '\t' + str(tfidf) + '\n') # To be removed
-                    new_lemmas.append((lemma, tfidf))
-            data[i][1] = new_lemmas
-
-    return data
-
-
 def preprocess(section, data):
     preprocessed_data_file = section + config.SUFFIX_PREPROCESSED_DATA
     dict_lemma_idx_file = section + config.DICT_LEMMA_IDX
@@ -168,7 +142,33 @@ def preprocess(section, data):
         lemma_to_idx = utils.load_pickle(dict_lemma_idx_file)
         idx_to_lemma = utils.load_pickle(dict_idx_lemma_file)
 
-    return preprocessed_data, lemma_to_idx, idx_to_lemma
+    return (preprocessed_data, lemma_to_idx, idx_to_lemma)
+
+
+def tfidf(data, min_threshold=0.0, max_threshold=1.0, idx_to_lemma=None):
+    max_lemmas = max([len(lemmas) for item, lemmas in data])
+    X = lil_matrix((len(data), max_lemmas))
+
+    # Fill the matrix X with idx of the lemmas of each report
+    for d in range(len(data)):
+        for i in range(len(data[d][1])):
+            X[d, i] = data[d][1][i]
+
+    transformer = TfidfTransformer(smooth_idf=True)
+    tfidf_results = transformer.fit_transform(X).toarray()
+
+    # Filter lemmas by their tf-idf
+    new_data = []
+    with open('lemmas.txt', 'w') as fp: # To be removed
+        for i in range(len(data)):
+            new_lemmas = []
+            for lemma, tfidf in zip(data[i][1], tfidf_results[i]):
+                if min_threshold <= tfidf <= max_threshold:
+                    fp.write(idx_to_lemma[lemma] + '\t' + str(tfidf) + '\n') # To be removed
+                    new_lemmas.append((lemma, tfidf))
+            new_data.append((data[i][0], new_lemmas))
+
+    return new_data
 
 
 if __name__ == "__main__":
@@ -177,4 +177,4 @@ if __name__ == "__main__":
     for section in sections_to_analyze:
         data = load_and_clean_data(section)
         data, lemma_to_idx, idx_to_lemma = preprocess(section, data)
-        data = tfidf(data, min_threshold=0.0, max_threshold=1.0) # In-place
+        data = tfidf(data, min_threshold=0.0, max_threshold=1.0, idx_to_lemma=idx_to_lemma)
