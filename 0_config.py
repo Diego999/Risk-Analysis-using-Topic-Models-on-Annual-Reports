@@ -2,7 +2,7 @@ import os
 import multiprocessing
 
 SF_NLP_JARS = '/Users/diego/Github/SelfSentRevisited/lib/stanford-corenlp-full-2016-10-31/*'
-STOPWORD_LIST = './stopwords.txt'
+STOPWORD_LIST = './stopwords_big.txt'
 FORCE_PREPROCESSING = False
 
 MULTITHREADING = True
