@@ -2,6 +2,7 @@ import os
 import glob
 import re
 import stanford_corenlp_pywrapper
+import utils
 from scipy.sparse import lil_matrix
 from sklearn.feature_extraction.text import TfidfTransformer
 config = __import__('0_config')
@@ -54,11 +55,10 @@ def clean(buffer):
 
 
 def load_and_clean_data(section):
-    final_file = section + '.' + config.EXTENSION_10K_REPORT
-    filtered_items = []
-    if not os.path.exists(final_file):
+    cleaned_data_file = section + config.SUFFIX_CLEAN_DATA
+    cleaned_data = []
+    if config.FORCE_PREPROCESSING or not os.path.exists(cleaned_data_file):
         items = read_section(section)
-
         for item in items:
             buffer = []
             with open(item, 'r', encoding='utf-8') as fp:
@@ -67,87 +67,108 @@ def load_and_clean_data(section):
 
             buffer = remove_header_and_multiple_lines(buffer)
             if content_relevant(buffer):
-                filtered_items.append((item, clean(buffer)))
+                cleaned_data.append((item, clean(buffer)))
 
-        print('{}: Keep {} over {} ({:.2f}%)'.format(section[section.rfind('/') + 1:], len(filtered_items), len(items), float(len(filtered_items)) / len(items) * 100.0))
+        print('{}: Keep {} over {} ({:.2f}%)'.format(section[section.rfind('/') + 1:], len(cleaned_data), len(items), float(len(cleaned_data)) / len(items) * 100.0))
 
-        with open(final_file, 'w', encoding='utf-8') as fp:
-            for i, l in filtered_items:
+        with open(cleaned_data_file, 'w', encoding='utf-8') as fp:
+            for i, l in cleaned_data:
                 fp.write(i + '\t' + l + '\n')
     else:
-        with open(final_file, 'r', encoding='utf-8') as fp:
+        with open(cleaned_data_file, 'r', encoding='utf-8') as fp:
             for l in fp:
                 i, l = l.split('\t')
-                filtered_items.append((i, l.strip()))
+                cleaned_data.append((i, l.strip()))
 
-    return filtered_items
+    return cleaned_data
 
 
-def lemmatize(data):
+def preprocess_util(data):
+    stopwords = set()
+    with open(config.STOPWORD_LIST, 'r', encoding='utf-8') as fp:
+        for l in fp:
+            stopwords.add(l.strip().lower())
+
     annotator = stanford_corenlp_pywrapper.CoreNLP(configdict={'annotators': 'tokenize, ssplit, pos, lemma'}, corenlp_jars=[config.SF_NLP_JARS])
 
+    idx = 1
+    lemma_to_idx = {'PAD': 0}
     new_data = []
     for item, text in data:
         parsed_data = annotator.parse_doc(text)['sentences']
         assert len(parsed_data) == 1
         parsed_data = parsed_data[0]
 
+        # Lemmatize
         lemmas = [l.lower() for l in parsed_data['lemmas']]
 
-        new_data.append((item, lemmas))
+        # Remove stopwords
+        lemmas = [l for l in lemmas if l not in stopwords]
 
-    return new_data
-
-
-def remove_stopwords(data):
-    stopwords = set()
-    with open(config.STOPWORD_LIST, 'r', encoding='utf-8') as fp:
-        for l in fp:
-            stopwords.add(l.strip().lower())
-
-    new_data = []
-    for item, lemmas in data:
-        new_data.append((item, [l for l in lemmas if l not in stopwords]))
-
-    return new_data
-
-
-def tfidf(data, min_threshold=0.0, max_threshold=1.0):
-    idx = 1
-    lemma_to_idx = {'PAD': 0}
-    for item, lemmas in data:
+        # Construct dictionnary
         for lemma in lemmas:
             if lemma not in lemma_to_idx:
                 lemma_to_idx[lemma] = idx
                 idx += 1
+
+        # Replace lemma by their corresponding indices
+        lemmas_idx = [lemma_to_idx[lemma] for lemma in lemmas]
+
+        new_data.append((item, lemmas_idx))
+
     idx_to_lemma = {v: k for k, v in lemma_to_idx.items()}
 
+    return new_data, lemma_to_idx, idx_to_lemma
+
+
+# Transformation in-place
+def tfidf(data, min_threshold=0.0, max_threshold=1.0):
     max_lemmas = max([len(lemmas) for item, lemmas in data])
     X = lil_matrix((len(data), max_lemmas))
 
+    # Fill the matrix X with idx of the lemmas of each report
     for d in range(len(data)):
         for i in range(len(data[d][1])):
-            X[d, i] = lemma_to_idx[data[d][1][i]]
+            X[d, i] = data[d][1][i]
 
-    transformer = TfidfTransformer(smooth_idf=False)
+    transformer = TfidfTransformer(smooth_idf=True)
     tfidf_results = transformer.fit_transform(X).toarray()
 
-    new_data = []
-    for i in range(len(data)):
-        new_lemmas = []
-        for lemma, tfidf in zip(data[i][1], tfidf_results[i]):
-            if min_threshold <= tfidf <= max_threshold:
-                new_lemmas.append(lemma)
-        new_data.append((data[i][0], new_lemmas))
+    # Filter lemmas by their tf-idf
+    with open('lemmas.txt', 'w') as fp: # To be removed
+        for i in range(len(data)):
+            new_lemmas = []
+            for lemma, tfidf in zip(data[i][1], tfidf_results[i]):
+                if min_threshold <= tfidf <= max_threshold:
+                    fp.write(idx_to_lemma[lemma] + '\t' + str(tfidf) + '\n') # To be removed
+                    new_lemmas.append((lemma, tfidf))
+            data[i][1] = new_lemmas
 
-    return new_data
+    return data
 
 
-def preprocess(data):
-    new_data = lemmatize(data)
-    new_data = remove_stopwords(new_data)
-    new_data = tfidf(new_data)
-    return new_data
+def preprocess(section, data):
+    preprocessed_data_file = section + config.SUFFIX_PREPROCESSED_DATA
+    dict_lemma_idx_file = section + config.DICT_LEMMA_IDX
+    dict_idx_lemma_file = section + config.DICT_IDX_LEMMA
+
+    preprocessed_data = None
+    lemma_to_idx = None
+    idx_to_lemma = None
+    if config.FORCE_PREPROCESSING or not os.path.exists(preprocessed_data_file) or not os.path.exists(dict_lemma_idx_file) or not os.path.exists(dict_idx_lemma_file):
+        preprocessed_data, lemma_to_idx, idx_to_lemma = preprocess_util(data)
+
+        # Save files
+        utils.save_pickle(preprocessed_data, preprocessed_data_file)
+        utils.save_pickle(lemma_to_idx, dict_lemma_idx_file)
+        utils.save_pickle(idx_to_lemma, dict_idx_lemma_file)
+
+    else:
+        preprocessed_data = utils.load_pickle(preprocessed_data_file)
+        lemma_to_idx = utils.load_pickle(dict_lemma_idx_file)
+        idx_to_lemma = utils.load_pickle(dict_idx_lemma_file)
+
+    return preprocessed_data, lemma_to_idx, idx_to_lemma
 
 
 if __name__ == "__main__":
@@ -155,5 +176,5 @@ if __name__ == "__main__":
 
     for section in sections_to_analyze:
         data = load_and_clean_data(section)
-
-    data = preprocess(data)
+        data, lemma_to_idx, idx_to_lemma = preprocess(section, data)
+        data = tfidf(data, min_threshold=0.0, max_threshold=1.0) # In-place

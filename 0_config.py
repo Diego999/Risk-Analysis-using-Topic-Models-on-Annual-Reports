@@ -3,6 +3,7 @@ import multiprocessing
 
 SF_NLP_JARS = '/Users/diego/Github/SelfSentRevisited/lib/stanford-corenlp-full-2016-10-31/*'
 STOPWORD_LIST = './stopwords.txt'
+FORCE_PREPROCESSING = False
 
 MULTITHREADING = True
 NUM_CORES = multiprocessing.cpu_count()
@@ -18,6 +19,10 @@ DATA_SECTON_FOLDER = os.path.join(DATA_FOLDER, 'sections')
 DATA_1A_FOLDER = os.path.join(DATA_SECTON_FOLDER, '1a_risk_factors')
 DATA_7_FOLDER = os.path.join(DATA_SECTON_FOLDER, '7_managements_discussion_and_analysis_of_financial_condition_and_results_of_operations')
 DATA_7A_FOLDER = os.path.join(DATA_SECTON_FOLDER, '7a_quantitative_and_qualitative_disclosures_about_market_risk')
+SUFFIX_CLEAN_DATA = '_clean.txt'
+SUFFIX_PREPROCESSED_DATA = '_preprocessed.pkl'
+DICT_LEMMA_IDX = 'dict_lemma_idx.pkl'
+DICT_IDX_LEMMA = 'dict_idx_lemma.pkl'
 
 URL_ROOT = 'https://www.sec.gov/Archives/'
 URL_INDEX_PATTERN = URL_ROOT + 'edgar/full-index/{year}/QTR{quarter}/company.gz'

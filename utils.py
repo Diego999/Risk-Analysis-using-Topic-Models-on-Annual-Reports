@@ -1,5 +1,18 @@
 import pymysql
 import os
+import pickle
+
+
+def save_pickle(data, filename):
+    with open(filename, 'wb') as fp:
+        pickle.dump(data, filename)
+
+
+def load_pickle(filename):
+    data = None
+    with open(filename, 'rb') as fp:
+        data = pickle.load(fp)
+    return data
 
 
 # Yield successive n-sized chunks from l.
