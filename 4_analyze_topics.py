@@ -7,6 +7,7 @@ import shutil
 from scipy.sparse import lil_matrix
 from sklearn.feature_extraction.text import TfidfTransformer
 from multiprocessing import Process, Manager
+from gensim.models import Phrases
 config = __import__('0_config')
 
 
@@ -189,6 +190,7 @@ def preprocess_util(data):
         preprocess_util_thread(data, final_data, 0)
     new_data = sum(final_data, [])
 
+    new_data = add_bigrams(new_data)
     new_data = remove_stopwords(new_data)
     new_data, lemma_to_idx, idx_to_lemma = transform_bow(new_data)
 
