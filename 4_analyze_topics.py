@@ -6,6 +6,7 @@ import utils
 import shutil
 from scipy.sparse import lil_matrix
 from sklearn.feature_extraction.text import TfidfTransformer
+from multiprocessing import Process
 config = __import__('0_config')
 
 
@@ -86,46 +87,95 @@ def load_and_clean_data(section):
     return cleaned_data
 
 
+def get_lemmas(parsed_data, stopwords):
+    assert len(parsed_data) == 1
+    parsed_data = parsed_data[0]
+
+    # Lemmatize
+    # #lemmas = [l.lower() for l in parsed_data['lemmas']]
+
+    # Lemmatize & remove proper nouns
+    # assert len(parsed_data['lemmas']) == len(parsed_data['pos'])
+    # lemmas = [l.lower() for l, p in zip(parsed_data['lemmas'], parsed_data['pos']) if 'NP' not in p]
+
+    # Lemmatize & keep only nouns, adjectives and verbs
+    assert len(parsed_data['lemmas']) == len(parsed_data['pos'])
+    lemmas = [l.lower() for l, p in zip(parsed_data['lemmas'], parsed_data['pos']) if
+              p in ['NN', 'NNS'] or 'VB' in p or 'JJ' in p]
+
+    # Remove stopwords
+    lemmas = [l for l in lemmas if l not in stopwords]
+
+    return lemmas
+
+
+def preprocess_util_thread(data, stopwords, storage, pid):
+    annotator = stanford_corenlp_pywrapper.CoreNLP(configdict={'annotators': 'tokenize, ssplit, pos, lemma'}, corenlp_jars=[config.SF_NLP_JARS])
+
+    new_data = []
+    for item, text in data:
+        parsed_data = annotator.parse_doc(text)['sentences']
+        lemmas = get_lemmas(parsed_data, stopwords)
+
+        new_data.append((item, lemmas))
+
+    storage[pid] = new_data
+
+
+def construct_lemma_dict_and_transform_lemma_to_idx(lemmas, lemma_to_idx, idx):
+    # Construct dictionnary
+    for lemma in lemmas:
+        if lemma not in lemma_to_idx:
+            lemma_to_idx[lemma] = idx
+            idx += 1
+
+    # Replace lemma by their corresponding indices
+    lemmas_idx = [lemma_to_idx[lemma] for lemma in lemmas]
+
+    return lemmas_idx, lemma_to_idx, idx
+
+
 def preprocess_util(data):
     stopwords = set()
     with open(config.STOPWORD_LIST, 'r', encoding='utf-8') as fp:
         for l in fp:
             stopwords.add(l.strip().lower())
 
-    annotator = stanford_corenlp_pywrapper.CoreNLP(configdict={'annotators': 'tokenize, ssplit, pos, lemma'}, corenlp_jars=[config.SF_NLP_JARS])
-
     idx = 1
     lemma_to_idx = {'PAD': 0}
-    new_data = []
-    for item, text in data:
-        parsed_data = annotator.parse_doc(text)['sentences']
-        assert len(parsed_data) == 1
-        parsed_data = parsed_data[0]
+    if config.MULTITHREADING:
+        data = utils.chunks(data, 1 + int(len(data) / config.NUM_CORES))
+        final_data = [None]*config.NUM_CORES
 
-        # Lemmatize
-        # #lemmas = [l.lower() for l in parsed_data['lemmas']]
+        procs = []
+        for i in range(config.NUM_CORES):
+            procs.append(Process(target=preprocess_util_thread, args=(data[i], stopwords, final_data, i)))
+            procs[-1].start()
 
-        # Lemmatize & remove proper nouns
-        #assert len(parsed_data['lemmas']) == len(parsed_data['pos'])
-        #lemmas = [l.lower() for l, p in zip(parsed_data['lemmas'], parsed_data['pos']) if 'NP' not in p]
+        for p in procs:
+            p.join()
 
-        # Lemmatize & keep only nouns, adjectives and verbs
-        assert len(parsed_data['lemmas']) == len(parsed_data['pos'])
-        lemmas = [l.lower() for l, p in zip(parsed_data['lemmas'], parsed_data['pos']) if p in ['NN', 'NNS'] or 'VB' in p or 'JJ' in p]
+        data = [] # Free memory
+        new_data = data
+        # Merge results
+        for d in final_data:
+            new_data += d
+        final_data = [] # Free memory
 
-        # Remove stopwords
-        lemmas = [l for l in lemmas if l not in stopwords]
+        for i in range(0, len(new_data)):
+            item, lemmas = new_data[i]
+            lemmas_idx, lemma_to_idx, idx = construct_lemma_dict_and_transform_lemma_to_idx(lemmas, lemma_to_idx, idx)
+            new_data[i] = (item, lemmas_idx)
+    else:
+        annotator = stanford_corenlp_pywrapper.CoreNLP(configdict={'annotators': 'tokenize, ssplit, pos, lemma'}, corenlp_jars=[config.SF_NLP_JARS])
 
-        # Construct dictionnary
-        for lemma in lemmas:
-            if lemma not in lemma_to_idx:
-                lemma_to_idx[lemma] = idx
-                idx += 1
+        new_data = []
+        for item, text in data:
+            parsed_data = annotator.parse_doc(text)['sentences']
+            lemmas = get_lemmas(parsed_data, stopwords)
 
-        # Replace lemma by their corresponding indices
-        lemmas_idx = [lemma_to_idx[lemma] for lemma in lemmas]
-
-        new_data.append((item, lemmas_idx))
+            lemmas_idx, lemma_to_idx, idx = construct_lemma_dict_and_transform_lemma_to_idx(lemmas, lemma_to_idx, idx)
+            new_data.append((item, lemmas_idx))
 
     idx_to_lemma = {v: k for k, v in lemma_to_idx.items()}
 
