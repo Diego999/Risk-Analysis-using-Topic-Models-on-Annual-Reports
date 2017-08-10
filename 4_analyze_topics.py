@@ -6,7 +6,7 @@ import utils
 import shutil
 from scipy.sparse import lil_matrix
 from sklearn.feature_extraction.text import TfidfTransformer
-from multiprocessing import Process
+from multiprocessing import Process, Manager
 config = __import__('0_config')
 
 
@@ -87,7 +87,7 @@ def load_and_clean_data(section):
     return cleaned_data
 
 
-def get_lemmas(parsed_data, stopwords):
+def get_lemmas(parsed_data):
     assert len(parsed_data) == 1
     parsed_data = parsed_data[0]
 
@@ -105,7 +105,7 @@ def get_lemmas(parsed_data, stopwords):
     return lemmas
 
 
-def preprocess_util_thread(data, stopwords, storage, pid):
+def preprocess_util_thread(data, storage, pid):
     annotator = stanford_corenlp_pywrapper.CoreNLP(configdict={'annotators': 'tokenize, ssplit, pos, lemma'}, corenlp_jars=[config.SF_NLP_JARS])
 
     new_data = []
@@ -130,7 +130,21 @@ def construct_lemma_dict_and_transform_lemma_to_idx(lemmas, lemma_to_idx, idx):
     return lemmas_idx, lemma_to_idx, idx
 
 
-def preprocess_util(data):
+def add_bigrams(data):
+    docs = [x[1] for x in data]
+    bigram = Phrases(docs, min_count=config.MIN_FREQ)
+    for idx in range(len(docs)):
+        for lemma in bigram[docs[idx]]:
+            if '_' in lemma:
+                docs[idx].append(lemma)
+
+    for i in range(len(data)):
+        data[i] = (data[i][0], docs[i])
+
+    return data
+
+
+def remove_stopwords(data):
     stopwords = set()
     with open(config.STOPWORD_LIST, 'r', encoding='utf-8') as fp:
         for l in fp:
@@ -154,13 +168,17 @@ def transform_bow(data):
     idx_to_lemma = {v: k for k, v in lemma_to_idx.items()}
 
     return new_data, lemma_to_idx, idx_to_lemma
+
+
+def preprocess_util(data):
+    manager = Manager()
     if config.MULTITHREADING:
         data = utils.chunks(data, 1 + int(len(data) / config.NUM_CORES))
-        final_data = [None]*config.NUM_CORES
+        final_data = manager.list([[]] * config.NUM_CORES)
 
         procs = []
         for i in range(config.NUM_CORES):
-            procs.append(Process(target=preprocess_util_thread, args=(data[i], stopwords, final_data, i)))
+            procs.append(Process(target=preprocess_util_thread, args=(data[i], final_data, i)))
             procs[-1].start()
 
         for p in procs:
@@ -171,15 +189,8 @@ def transform_bow(data):
         preprocess_util_thread(data, final_data, 0)
     new_data = sum(final_data, [])
 
-        new_data = []
-        for item, text in data:
-            parsed_data = annotator.parse_doc(text)['sentences']
-            lemmas = get_lemmas(parsed_data, stopwords)
-
-            lemmas_idx, lemma_to_idx, idx = construct_lemma_dict_and_transform_lemma_to_idx(lemmas, lemma_to_idx, idx)
-            new_data.append((item, lemmas_idx))
-
-    idx_to_lemma = {v: k for k, v in lemma_to_idx.items()}
+    new_data = remove_stopwords(new_data)
+    new_data, lemma_to_idx, idx_to_lemma = transform_bow(new_data)
 
     return new_data, lemma_to_idx, idx_to_lemma
 
