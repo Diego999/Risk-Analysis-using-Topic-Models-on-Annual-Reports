@@ -8,6 +8,7 @@ data/*/*
 .idea/*
 .idea/*/*
 Mallet/*
+lib/*
 
 # C extensions
 *.so
