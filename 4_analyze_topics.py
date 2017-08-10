@@ -206,17 +206,6 @@ def preprocess(section, data):
     return (preprocessed_data, lemma_to_idx, idx_to_lemma)
 
 
-def tfidf(data, min_threshold=0.0, max_threshold=1.0, idx_to_lemma=None):
-    max_lemmas = max([len(lemmas) for item, lemmas in data])
-    X = lil_matrix((len(data), max_lemmas))
-
-    # Fill the matrix X with idx of the lemmas of each report
-    for d in range(len(data)):
-        for i in range(len(data[d][1])):
-            X[d, i] = data[d][1][i]
-
-    transformer = TfidfTransformer(smooth_idf=True)
-    tfidf_results = transformer.fit_transform(X).toarray()
 
     # Filter lemmas by their tf-idf
     new_data = []
