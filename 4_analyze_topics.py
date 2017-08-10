@@ -92,19 +92,15 @@ def get_lemmas(parsed_data, stopwords):
     parsed_data = parsed_data[0]
 
     # Lemmatize
-    # #lemmas = [l.lower() for l in parsed_data['lemmas']]
+    lemmas = [l.lower() for l in parsed_data['lemmas']]
 
     # Lemmatize & remove proper nouns
     # assert len(parsed_data['lemmas']) == len(parsed_data['pos'])
     # lemmas = [l.lower() for l, p in zip(parsed_data['lemmas'], parsed_data['pos']) if 'NP' not in p]
 
     # Lemmatize & keep only nouns, adjectives and verbs
-    assert len(parsed_data['lemmas']) == len(parsed_data['pos'])
-    lemmas = [l.lower() for l, p in zip(parsed_data['lemmas'], parsed_data['pos']) if
-              p in ['NN', 'NNS'] or 'VB' in p or 'JJ' in p]
-
-    # Remove stopwords
-    lemmas = [l for l in lemmas if l not in stopwords]
+    #assert len(parsed_data['lemmas']) == len(parsed_data['pos'])
+    #lemmas = [l.lower() for l, p in zip(parsed_data['lemmas'], parsed_data['pos']) if p in ['NN', 'NNS'] or 'VB' in p or 'JJ' in p]
 
     return lemmas
 
@@ -115,8 +111,7 @@ def preprocess_util_thread(data, stopwords, storage, pid):
     new_data = []
     for item, text in data:
         parsed_data = annotator.parse_doc(text)['sentences']
-        lemmas = get_lemmas(parsed_data, stopwords)
-
+        lemmas = get_lemmas(parsed_data)
         new_data.append((item, lemmas))
 
     storage[pid] = new_data
@@ -141,8 +136,24 @@ def preprocess_util(data):
         for l in fp:
             stopwords.add(l.strip().lower())
 
+    # Remove stopwords
+    new_data = []
+    for item, lemmas in data:
+        new_data.append((item, [l for l in lemmas if l not in stopwords and (len(l) > 1 and l != '#')]))
+
+    return new_data
+
+
+def transform_bow(data):
+    new_data = []
     idx = 1
     lemma_to_idx = {'PAD': 0}
+    for item, lemmas in data:
+        lemmas_idx, lemma_to_idx, idx = construct_lemma_dict_and_transform_lemma_to_idx(lemmas, lemma_to_idx, idx)
+        new_data.append((item, lemmas_idx))
+    idx_to_lemma = {v: k for k, v in lemma_to_idx.items()}
+
+    return new_data, lemma_to_idx, idx_to_lemma
     if config.MULTITHREADING:
         data = utils.chunks(data, 1 + int(len(data) / config.NUM_CORES))
         final_data = [None]*config.NUM_CORES
@@ -155,19 +166,10 @@ def preprocess_util(data):
         for p in procs:
             p.join()
 
-        data = [] # Free memory
-        new_data = data
-        # Merge results
-        for d in final_data:
-            new_data += d
-        final_data = [] # Free memory
-
-        for i in range(0, len(new_data)):
-            item, lemmas = new_data[i]
-            lemmas_idx, lemma_to_idx, idx = construct_lemma_dict_and_transform_lemma_to_idx(lemmas, lemma_to_idx, idx)
-            new_data[i] = (item, lemmas_idx)
     else:
-        annotator = stanford_corenlp_pywrapper.CoreNLP(configdict={'annotators': 'tokenize, ssplit, pos, lemma'}, corenlp_jars=[config.SF_NLP_JARS])
+        final_data = [None]
+        preprocess_util_thread(data, final_data, 0)
+    new_data = sum(final_data, [])
 
         new_data = []
         for item, text in data:
