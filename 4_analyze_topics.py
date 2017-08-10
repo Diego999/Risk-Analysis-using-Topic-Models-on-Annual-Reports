@@ -3,6 +3,7 @@ import glob
 import re
 import stanford_corenlp_pywrapper
 import utils
+import shutil
 from scipy.sparse import lil_matrix
 from sklearn.feature_extraction.text import TfidfTransformer
 config = __import__('0_config')
@@ -181,6 +182,21 @@ def tfidf(data, min_threshold=0.0, max_threshold=1.0, idx_to_lemma=None):
     return new_data
 
 
+def prepare_data(section, data, idx_to_lemma):
+    folder_input = section + config.SUFFIX_INPUT_DATA
+
+    if config.FORCE_PREPROCESSING and os.path.isdir(folder_input):
+        shutil.rmtree(folder_input)
+
+    if not os.path.isdir(folder_input):
+        os.mkdir(folder_input)
+
+    for item, lemmas in data:
+        item_filename = os.path.join(folder_input, item[item.rfind('/')+1:])
+        with open(item_filename, 'w', encoding='utf-8') as fp:
+            fp.write(' '.join([idx_to_lemma[idx_lemma] for idx_lemma, tfidf in lemmas]))
+
+
 if __name__ == "__main__":
     sections_to_analyze = [config.DATA_1A_FOLDER]
 
@@ -188,3 +204,4 @@ if __name__ == "__main__":
         data = load_and_clean_data(section)
         data, lemma_to_idx, idx_to_lemma = preprocess(section, data)
         data = tfidf(data, min_threshold=0.0, max_threshold=1.0, idx_to_lemma=idx_to_lemma)
+        prepare_data(section, data, idx_to_lemma)

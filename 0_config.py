@@ -21,6 +21,7 @@ DATA_7_FOLDER = os.path.join(DATA_SECTON_FOLDER, '7_managements_discussion_and_a
 DATA_7A_FOLDER = os.path.join(DATA_SECTON_FOLDER, '7a_quantitative_and_qualitative_disclosures_about_market_risk')
 SUFFIX_CLEAN_DATA = '_clean.txt'
 SUFFIX_PREPROCESSED_DATA = '_preprocessed.pkl'
+SUFFIX_INPUT_DATA = '_input'
 DICT_LEMMA_IDX = 'dict_lemma_idx.pkl'
 DICT_IDX_LEMMA = 'dict_idx_lemma.pkl'
 
