@@ -42,6 +42,7 @@ def content_relevant(buffer):
 pattern_remove_multiple_space = re.compile(r'\s+')
 pattern_remove_new_lines = re.compile(r'\n+')
 pattern_non_char_digit_hash_perc_dash = re.compile(r'[^a-z0-9#%\' -]+')
+pattern_remove_multiple_dash = re.compile(r'-+')
 pattern_map_digit_to_hash = re.compile(r'[0-9]+')
 pattern_html_tags = re.compile('<.*?>')
 pattern_multiple_hash = re.compile(r'#+')
