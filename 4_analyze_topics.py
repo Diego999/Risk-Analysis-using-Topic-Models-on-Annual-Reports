@@ -8,6 +8,7 @@ from scipy.sparse import lil_matrix
 from sklearn.feature_extraction.text import TfidfTransformer
 from multiprocessing import Process, Manager
 from gensim.models import Phrases
+from gensim.corpora import Dictionary
 config = __import__('0_config')
 
 
@@ -221,34 +222,15 @@ def preprocess(section, data):
     return (preprocessed_data, lemma_to_idx, idx_to_lemma)
 
 
+def preprocessing_topic(data, idx_to_lemma):
+    for i in range(0, len(data)):
+        data[i] = (data[i][0], [idx_to_lemma[idx] for idx in data[i][1]])
 
-    # Filter lemmas by their tf-idf
-    new_data = []
-    with open('lemmas.txt', 'w') as fp: # To be removed
-        for i in range(len(data)):
-            new_lemmas = []
-            for lemma, tfidf in zip(data[i][1], tfidf_results[i]):
-                if min_threshold <= tfidf <= max_threshold:
-                    fp.write(idx_to_lemma[lemma] + '\t' + str(tfidf) + '\n') # To be removed
-                    new_lemmas.append((lemma, tfidf))
-            new_data.append((data[i][0], new_lemmas))
-
-    return new_data
-
-
-def prepare_data(section, data, idx_to_lemma):
-    folder_input = section + config.SUFFIX_INPUT_DATA
-
-    if config.FORCE_PREPROCESSING and os.path.isdir(folder_input):
-        shutil.rmtree(folder_input)
-
-    if not os.path.isdir(folder_input):
-        os.mkdir(folder_input)
-
-    for item, lemmas in data:
-        item_filename = os.path.join(folder_input, item[item.rfind('/')+1:])
-        with open(item_filename, 'w', encoding='utf-8') as fp:
-            fp.write(' '.join([idx_to_lemma[idx_lemma] for idx_lemma, tfidf in lemmas]))
+    dictionary = Dictionary([x[1] for x in data])
+    dictionary.filter_extremes(no_below=config.MIN_FREQ, no_above=config.MAX_DOC_RATIO)
+    corpus = [dictionary.doc2bow(x[1]) for x in data]
+    print('Number of unique tokens: %d' % len(dictionary))
+    print('Number of documents: %d' % len(corpus))
 
 
 if __name__ == "__main__":
@@ -257,5 +239,4 @@ if __name__ == "__main__":
     for section in sections_to_analyze:
         data = load_and_clean_data(section)
         data, lemma_to_idx, idx_to_lemma = preprocess(section, data)
-        data = tfidf(data, min_threshold=0.0, max_threshold=1.0, idx_to_lemma=idx_to_lemma)
-        prepare_data(section, data, idx_to_lemma)
+        preprocessing_topic(data, idx_to_lemma)

@@ -25,6 +25,9 @@ SUFFIX_INPUT_DATA = '_input'
 DICT_LEMMA_IDX = 'dict_lemma_idx.pkl'
 DICT_IDX_LEMMA = 'dict_idx_lemma.pkl'
 
+MIN_FREQ = 20
+MAX_DOC_RATIO = 0.5
+
 URL_ROOT = 'https://www.sec.gov/Archives/'
 URL_INDEX_PATTERN = URL_ROOT + 'edgar/full-index/{year}/QTR{quarter}/company.gz'
 PDF_MERGE_FILE = os.path.join(DATA_PD_FOLDER, 'merged_pds.pd')
