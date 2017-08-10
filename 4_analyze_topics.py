@@ -101,9 +101,16 @@ def preprocess_util(data):
         assert len(parsed_data) == 1
         parsed_data = parsed_data[0]
 
+        # Lemmatize
+        # #lemmas = [l.lower() for l in parsed_data['lemmas']]
+
         # Lemmatize & remove proper nouns
+        #assert len(parsed_data['lemmas']) == len(parsed_data['pos'])
+        #lemmas = [l.lower() for l, p in zip(parsed_data['lemmas'], parsed_data['pos']) if 'NP' not in p]
+
+        # Lemmatize & keep only nouns, adjectives and verbs
         assert len(parsed_data['lemmas']) == len(parsed_data['pos'])
-        lemmas = [l.lower() for l, p in zip(parsed_data['lemmas'], parsed_data['pos']) if 'NP' not in p]
+        lemmas = [l.lower() for l, p in zip(parsed_data['lemmas'], parsed_data['pos']) if p in ['NN', 'NNS'] or 'VB' in p or 'JJ' in p]
 
         # Remove stopwords
         lemmas = [l for l in lemmas if l not in stopwords]
