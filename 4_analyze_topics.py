@@ -3,9 +3,6 @@ import glob
 import re
 import stanford_corenlp_pywrapper
 import utils
-import shutil
-from scipy.sparse import lil_matrix
-from sklearn.feature_extraction.text import TfidfTransformer
 from multiprocessing import Process, Manager
 from gensim.models import Phrases
 from gensim.corpora import Dictionary
