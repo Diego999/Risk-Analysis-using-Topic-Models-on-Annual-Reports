@@ -145,21 +145,12 @@ def construct_lemma_dict_and_transform_lemma_to_idx(lemmas, lemma_to_idx, idx):
 def add_bigrams_trigrams(data):
     docs = [x[1] for x in data]
 
-    bigrams = Phrases(docs, min_count=config.MIN_FREQ)
-    for idx in range(len(docs)):
-        for lemma in bigrams[docs[idx]]:
-            if '_' in lemma: # a_b
-                docs[idx].append(lemma)
+    bigrams = Phrases(docs, min_count=config.MIN_FREQ_BI) # a b -> a_b
+    trigrams = Phrases([bigrams[docs[x]] for x in range(len(docs))], min_count=config.MIN_FREQ_TRI) # a b c -> a_b_c
+    quadrigrams = Phrases([trigrams[docs[x]] for x in range(len(docs))], min_count=config.MIN_FREQ_QUA) # a b c d -> a_b_c_d
 
-    # Trigrams are computer by reiterating with bigrams
-    trigrams = Phrases(bigrams, min_count=config.MIN_FREQ)
-    for idx in range(len(docs)):
-        for lemma in trigrams[docs[idx]]:
-            if lemma.count('_') > 1: # a_b_c
-                docs[idx].append(lemma)
-
-    for i in range(len(data)):
-        data[i] = (data[i][0], docs[i])
+    for idx in range(len(data)):
+        data[idx] = (data[idx][0], quadrigrams[docs[idx]])
 
     return data
 

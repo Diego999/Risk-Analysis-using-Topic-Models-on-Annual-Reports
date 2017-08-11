@@ -27,6 +27,9 @@ DICT_LEMMA_IDX = '_dict_lemma_idx.pkl'
 DICT_IDX_LEMMA = '_dict_idx_lemma.pkl'
 
 MIN_FREQ = 20
+MIN_FREQ_BI = 20
+MIN_FREQ_TRI = 10
+MIN_FREQ_QUA = 5
 MAX_DOC_RATIO = 0.5
 
 URL_ROOT = 'https://www.sec.gov/Archives/'
