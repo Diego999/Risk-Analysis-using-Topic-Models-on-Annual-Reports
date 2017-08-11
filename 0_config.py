@@ -33,6 +33,7 @@ URL_INDEX_PATTERN = URL_ROOT + 'edgar/full-index/{year}/QTR{quarter}/company.gz'
 PDF_MERGE_FILE = os.path.join(DATA_PD_FOLDER, 'merged_pds.pd')
 PDF_MERGE_10K_FILE = os.path.join(DATA_PD_FOLDER, 'merged_10k_pds.pd')
 START_YEAR = 1993
+START_YEAR_TWO_DIGIT = int(str(START_YEAR)[-2:])
 START_QUARTER = 1
 
 FORM_TYPE = '10-K'

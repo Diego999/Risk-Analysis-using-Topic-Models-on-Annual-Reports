@@ -1,6 +1,15 @@
 import pymysql
 import os
 import pickle
+config = __import__('0_config')
+
+
+def extract_year_from_filename_annual_report(filename):
+    return int(filename.split('-')[-2])
+
+
+def year_annual_report_comparator(year):
+    return year + (2000 if year < config.START_YEAR_TWO_DIGIT else 1900)
 
 
 def save_pickle(data, filename):
