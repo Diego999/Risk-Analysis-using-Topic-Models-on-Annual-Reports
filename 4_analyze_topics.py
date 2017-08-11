@@ -14,6 +14,13 @@ from gensim.models.wrappers import LdaMallet
 config = __import__('0_config')
 
 
+try:
+    import pyLDAvis.gensim
+    CAN_VISUALIZE = True
+except ImportError:
+    CAN_VISUALIZE = False
+
+
 def read_section(section):
     if not os.path.isdir(section):
         print('ERR: {} does not exists !'.format(section))
@@ -248,6 +255,12 @@ def preprocessing_topic(data, idx_to_lemma):
     return corpus, dictionary, texts
 
 
+def visualize(model, corpus, dictionary):
+    if CAN_VISUALIZE:
+        prepared = pyLDAvis.gensim.prepare(model, corpus, dictionary)
+        pyLDAvis.show(prepared)
+
+
 def train_LDA(corpus, dictionary, texts):
     # Set training parameters.
     num_topics = 10
@@ -262,10 +275,12 @@ def train_LDA(corpus, dictionary, texts):
     # Gensim LDA
     #lda_model, coherence_c_v, coherence_u_mass = train_lda_model(corpus, dictionary, chunksize, eval_every, id2word, iterations, num_topics, passes, texts)
     #print(coherence_u_mass.get_coherence(), coherence_c_v.get_coherence())
+    #visualize(lda_model, corpus, dictionary)
 
     # LDA Multicore
     lda_model, coherence_c_v, coherence_u_mass = train_lda_model_multicores(corpus, dictionary, chunksize, eval_every, id2word, iterations, num_topics, passes, texts, workers=int(config.NUM_CORES/2)-1)
     print(coherence_u_mass.get_coherence(), coherence_c_v.get_coherence())
+    visualize(lda_model, corpus, dictionary)
 def train_lda_model(corpus, dictionary, chunksize, eval_every, id2word, iterations, num_topics, passes, texts):
     model = LdaModel(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='auto', eta='auto', iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every)
     coherence_u_mass = CoherenceModel(model=model, corpus=corpus, dictionary=dictionary, coherence='u_mass')
