@@ -22,8 +22,8 @@ DATA_7A_FOLDER = os.path.join(DATA_SECTON_FOLDER, '7a_quantitative_and_qualitati
 SUFFIX_CLEAN_DATA = '_clean.txt'
 SUFFIX_PREPROCESSED_DATA = '_preprocessed.pkl'
 SUFFIX_INPUT_DATA = '_input'
-DICT_LEMMA_IDX = 'dict_lemma_idx.pkl'
-DICT_IDX_LEMMA = 'dict_idx_lemma.pkl'
+DICT_LEMMA_IDX = '_dict_lemma_idx.pkl'
+DICT_IDX_LEMMA = '_dict_idx_lemma.pkl'
 
 MIN_FREQ = 20
 MAX_DOC_RATIO = 0.5
