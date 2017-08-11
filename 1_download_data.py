@@ -204,7 +204,7 @@ def _download_annual_reports(DATA_AR_FOLDER, LOG_FILE, URL_ROOT, row):
 
 
 if __name__ == "__main__":
-    random.seed(0)
+    random.seed(config.SEED)
 
     if os.path.exists(config.LOG_FILE):
         os.remove(config.LOG_FILE)

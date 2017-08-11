@@ -6,6 +6,7 @@ import utils
 import logging
 import numpy
 import collections
+import random
 from multiprocessing import Process, Manager
 from gensim.models import Phrases
 from gensim.corpora import Dictionary
@@ -304,8 +305,9 @@ def train_lda_model_multicores(corpus, dictionary, chunksize, eval_every, id2wor
 
 
 if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.INFO)
-    numpy.random.seed(0)
+    #logging.getLogger().setLevel(logging.INFO)
+    numpy.random.seed(config.SEED)
+    random.seed(config.SEED)
 
     sections_to_analyze = [config.DATA_1A_FOLDER]
     for section in sections_to_analyze:

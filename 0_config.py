@@ -7,6 +7,7 @@ FORCE_PREPROCESSING = False
 
 MULTITHREADING = True
 NUM_CORES = multiprocessing.cpu_count()
+SEED = 0
 
 EXTENSION_10K_REPORT = 'txt'
 EXTENSION_CLEAN_PREPROCESSING = 'txt_clean'

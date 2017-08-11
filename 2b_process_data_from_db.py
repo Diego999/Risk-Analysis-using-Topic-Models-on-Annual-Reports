@@ -47,7 +47,7 @@ def process_folder(annual_report, connection):
 
 
 if __name__ == "__main__":
-    random.seed(0)
+    random.seed(config.SEED)
 
     if not os.path.isdir(config.DATA_AR_FOLDER):
         print('ERR: {} does not exist'.format(config.DATA_AR_FOLDER))

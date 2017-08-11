@@ -2,6 +2,7 @@ import os
 import utils
 from multiprocessing import Process
 import shutil
+import random
 config = __import__('0_config')
 process_data = __import__('2a_process_data')
 
@@ -94,6 +95,7 @@ def work_process(list_1a, list_7, list_7a):
 
 
 if __name__ == "__main__":
+    random.seed(config.SEED)
     list_1a, list_7, list_7a = fetch_data()
 
     for folder in [config.DATA_1A_FOLDER, config.DATA_7_FOLDER, config.DATA_7A_FOLDER]:

@@ -1,5 +1,6 @@
 import numpy as np
 import utils
+import random
 config = __import__('0_config')
 process_data = __import__('2a_process_data')
 
@@ -26,6 +27,8 @@ def hist(vals, bin_width):
 
 
 if __name__ == "__main__":
+    random.seed(config.SEED)
+
     connection = utils.create_mysql_connection()
     # Total
     with connection.cursor() as cursor:
