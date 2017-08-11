@@ -141,12 +141,20 @@ def construct_lemma_dict_and_transform_lemma_to_idx(lemmas, lemma_to_idx, idx):
     return lemmas_idx, lemma_to_idx, idx
 
 
-def add_bigrams(data):
+def add_bigrams_trigrams(data):
     docs = [x[1] for x in data]
-    bigram = Phrases(docs, min_count=config.MIN_FREQ)
+
+    bigrams = Phrases(docs, min_count=config.MIN_FREQ)
     for idx in range(len(docs)):
-        for lemma in bigram[docs[idx]]:
-            if '_' in lemma:
+        for lemma in bigrams[docs[idx]]:
+            if '_' in lemma: # a_b
+                docs[idx].append(lemma)
+
+    # Trigrams are computer by reiterating with bigrams
+    trigrams = Phrases(bigrams, min_count=config.MIN_FREQ)
+    for idx in range(len(docs)):
+        for lemma in trigrams[docs[idx]]:
+            if lemma.count('_') > 1: # a_b_c
                 docs[idx].append(lemma)
 
     for i in range(len(data)):
@@ -200,7 +208,7 @@ def preprocess_util(data):
         preprocess_util_thread(data, final_data, 0)
     new_data = sum(final_data, [])
 
-    new_data = add_bigrams(new_data)
+    new_data = add_bigrams_trigrams(new_data)
     new_data = remove_stopwords(new_data)
     new_data, lemma_to_idx, idx_to_lemma = transform_bow(new_data)
 
