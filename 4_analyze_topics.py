@@ -3,9 +3,14 @@ import glob
 import re
 import stanford_corenlp_pywrapper
 import utils
+import logging
+import numpy
+import collections
 from multiprocessing import Process, Manager
 from gensim.models import Phrases
 from gensim.corpora import Dictionary
+from gensim.models import CoherenceModel, LdaModel, HdpModel, LdaMulticore
+from gensim.models.wrappers import LdaMallet
 config = __import__('0_config')
 
 
@@ -219,21 +224,70 @@ def preprocess(section, data):
     return (preprocessed_data, lemma_to_idx, idx_to_lemma)
 
 
+def sort_by_year_annual_report(item):
+    return utils.year_annual_report_comparator(utils.extract_year_from_filename_annual_report(item))
+
+
 def preprocessing_topic(data, idx_to_lemma):
     for i in range(0, len(data)):
         data[i] = (data[i][0], [idx_to_lemma[idx] for idx in data[i][1]])
 
-    dictionary = Dictionary([x[1] for x in data])
+    # Sort data & create time slices to use dynamic topic modeling and analyze evolution of topics during the time (93 94 ... 2015 2016 2017 ...)
+    data = sorted(data, key=lambda x: sort_by_year_annual_report(x[0]))
+    data_years = [utils.extract_year_from_filename_annual_report(item) for item, text in data]
+    time_slices = [freq for year, freq in sorted(collections.Counter(data_years).items(), key=lambda x: utils.year_annual_report_comparator(x[0]))]
+    assert sum(time_slices) == len(data)
+
+    texts = [x[1] for x in data]
+    dictionary = Dictionary(texts)
     dictionary.filter_extremes(no_below=config.MIN_FREQ, no_above=config.MAX_DOC_RATIO)
     corpus = [dictionary.doc2bow(x[1]) for x in data]
     print('Number of unique tokens: %d' % len(dictionary))
     print('Number of documents: %d' % len(corpus))
 
+    return corpus, dictionary, texts
+
+
+def train_LDA(corpus, dictionary, texts):
+    # Set training parameters.
+    num_topics = 10
+    chunksize = 2000
+    passes = 20
+    iterations = 400
+    eval_every = 1
+
+    temp = dictionary[0]  # This is only to "load" the dictionary.
+    id2word = dictionary.id2token
+
+    # Gensim LDA
+    #lda_model, coherence_c_v, coherence_u_mass = train_lda_model(corpus, dictionary, chunksize, eval_every, id2word, iterations, num_topics, passes, texts)
+    #print(coherence_u_mass.get_coherence(), coherence_c_v.get_coherence())
+
+    # LDA Multicore
+    lda_model, coherence_c_v, coherence_u_mass = train_lda_model_multicores(corpus, dictionary, chunksize, eval_every, id2word, iterations, num_topics, passes, texts, workers=int(config.NUM_CORES/2)-1)
+    print(coherence_u_mass.get_coherence(), coherence_c_v.get_coherence())
+def train_lda_model(corpus, dictionary, chunksize, eval_every, id2word, iterations, num_topics, passes, texts):
+    model = LdaModel(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='auto', eta='auto', iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every)
+    coherence_u_mass = CoherenceModel(model=model, corpus=corpus, dictionary=dictionary, coherence='u_mass')
+    coherence_c_v = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
+    return model, coherence_c_v, coherence_u_mass
+
+
+def train_lda_model_multicores(corpus, dictionary, chunksize, eval_every, id2word, iterations, num_topics, passes, texts, workers):
+    model = LdaMulticore(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='symmetric', eta='auto', iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every, workers=workers)
+    coherence_u_mass = CoherenceModel(model=model, corpus=corpus, dictionary=dictionary, coherence='u_mass')
+    coherence_c_v = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
+    return model, coherence_c_v, coherence_u_mass
+
 
 if __name__ == "__main__":
-    sections_to_analyze = [config.DATA_1A_FOLDER]
+    logging.getLogger().setLevel(logging.INFO)
+    numpy.random.seed(0)
 
+    sections_to_analyze = [config.DATA_1A_FOLDER]
     for section in sections_to_analyze:
         data = load_and_clean_data(section)
         data, lemma_to_idx, idx_to_lemma = preprocess(section, data)
-        preprocessing_topic(data, idx_to_lemma)
+
+        corpus, dictionary, texts = preprocessing_topic(data, idx_to_lemma)
+        train_LDA(corpus, dictionary, texts)
