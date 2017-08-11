@@ -255,6 +255,7 @@ def preprocessing_topic(data, idx_to_lemma):
     return corpus, dictionary, texts
 
 
+# w.r.t. https://nlp.stanford.edu/events/illvi2014/papers/sievert-illvi2014.pdf
 def visualize(model, corpus, dictionary):
     if CAN_VISUALIZE:
         prepared = pyLDAvis.gensim.prepare(model, corpus, dictionary)
@@ -264,13 +265,15 @@ def visualize(model, corpus, dictionary):
 def train_LDA(corpus, dictionary, texts):
     # Set training parameters.
     num_topics = 10
-    chunksize = 2000
-    passes = 20
+    chunksize = 2000 # should be fine w.r.t. https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation.pdf
+    passes = 10
     iterations = 400
-    eval_every = 1
+    eval_every = 10
 
     temp = dictionary[0]  # This is only to "load" the dictionary.
     id2word = dictionary.id2token
+
+    # C_V should be the best estimator w.r.t http://svn.aksw.org/papers/2015/WSDM_Topic_Evaluation/public.pdf
 
     # Gensim LDA
     #lda_model, coherence_c_v, coherence_u_mass = train_lda_model(corpus, dictionary, chunksize, eval_every, id2word, iterations, num_topics, passes, texts)
@@ -278,21 +281,59 @@ def train_LDA(corpus, dictionary, texts):
     #visualize(lda_model, corpus, dictionary)
 
     # LDA Multicore
-    lda_model, coherence_c_v, coherence_u_mass = train_lda_model_multicores(corpus, dictionary, chunksize, eval_every, id2word, iterations, num_topics, passes, texts, workers=int(config.NUM_CORES/2)-1)
-    print(coherence_u_mass.get_coherence(), coherence_c_v.get_coherence())
-    visualize(lda_model, corpus, dictionary)
+    #lda_model, coherence_c_v, coherence_u_mass = train_lda_model_multicores(corpus, dictionary, chunksize, eval_every, id2word, iterations, num_topics, passes, texts, workers=int(config.NUM_CORES/2)-1)
+    #print(coherence_u_mass.get_coherence(), coherence_c_v.get_coherence())
+    #visualize(lda_model, corpus, dictionary)
+
+    # Gensim HDP http://proceedings.mlr.press/v15/wang11a/wang11a.pdf
+    #hdp_model, coherence_c_v, coherence_u_mass = train_hdp_model(corpus, dictionary, chunksize, texts)
+    #print(coherence_u_mass.get_coherence(), coherence_c_v.get_coherence())
+    #visualize(hdp_model, corpus, dictionary)
+
+    #model, coherence_c_v, coherence_u_mass = train_lda_mallet_model(corpus, dictionary, eval_every, id2word, iterations, num_topics, texts)
+    #print(coherence_u_mass.get_coherence(), coherence_c_v.get_coherence())
+    #top_topics = model.top_topics(corpus, num_words=20)
+    # CANNOT BE VISUALIZED visualize(model, corpus, dictionary)
+
+    # Average topic coherence is the sum of topic coherences of all topics, divided by the number of topics.
+    #avg_topic_coherence = sum([t[1] for t in top_topics]) / num_topics
+    #print('Average topic coherence: %.4f.' % avg_topic_coherence)
+
+
+def train_lda_mallet_model(corpus, dictionary, eval_every, id2word, iterations, num_topics, texts):
+    model = LdaMallet('./Mallet/bin/mallet', corpus=corpus, id2word=id2word, iterations=iterations, num_topics=num_topics, optimize_interval=eval_every, workers=config.NUM_CORES, prefix='/tmp/')
+    coherence_u_mass = CoherenceModel(model=model, corpus=corpus, dictionary=dictionary, coherence='u_mass')
+    coherence_c_v = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
+    return model, coherence_c_v, coherence_u_mass
+
+
+# https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation.pdf
 def train_lda_model(corpus, dictionary, chunksize, eval_every, id2word, iterations, num_topics, passes, texts):
-    model = LdaModel(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='auto', eta='auto', iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every)
+    model = LdaModel(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='auto', eta='auto', iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every, random_state=config.SEED)
     coherence_u_mass = CoherenceModel(model=model, corpus=corpus, dictionary=dictionary, coherence='u_mass')
     coherence_c_v = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
     return model, coherence_c_v, coherence_u_mass
 
 
 def train_lda_model_multicores(corpus, dictionary, chunksize, eval_every, id2word, iterations, num_topics, passes, texts, workers):
-    model = LdaMulticore(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='symmetric', eta='auto', iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every, workers=workers)
+    model = LdaMulticore(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='symmetric', eta='auto', iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every, workers=workers, random_state=config.SEED)
     coherence_u_mass = CoherenceModel(model=model, corpus=corpus, dictionary=dictionary, coherence='u_mass')
     coherence_c_v = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
     return model, coherence_c_v, coherence_u_mass
+
+
+# http://proceedings.mlr.press/v15/wang11a/wang11a.pdf
+def train_hdp_model(corpus, dictionary, chunksize, texts):
+    model = HdpModel(corpus=corpus, id2word=dictionary, chunksize=chunksize, random_state=config.SEED)
+    # To get the topic words from the model
+    topics = []
+    for topic_id, topic in model.show_topics(num_topics=10, formatted=False):
+        topic = [word for word, _ in topic]
+        topics.append(topic)
+    coherence_u_mass = CoherenceModel(topics=topics, corpus=corpus, dictionary=dictionary, coherence='u_mass')
+    coherence_c_v = CoherenceModel(topics=topics, texts=texts, dictionary=dictionary, coherence='c_v')
+    return model, coherence_c_v, coherence_u_mass
+
 
 
 if __name__ == "__main__":
