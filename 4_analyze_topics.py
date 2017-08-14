@@ -130,7 +130,7 @@ def preprocess_util_thread(data, storage, pid):
 
 
 def construct_lemma_dict_and_transform_lemma_to_idx(lemmas, lemma_to_idx, idx):
-    # Construct dictionnary
+    # Construct dictionary
     for lemma in lemmas:
         if lemma not in lemma_to_idx:
             lemma_to_idx[lemma] = idx
@@ -270,9 +270,9 @@ def train_topic_model(corpus, dictionary, texts, num_topics=15, chunksize=2000, 
     # LDA https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation.pdf
     #model = train_lda_model(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes)
     # LDA Multicore
-    #model = train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, workers=3)
+    model = train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, workers=3)
     # HDP http://proceedings.mlr.press/v15/wang11a/wang11a.pdf
-    model = train_hdp_model(corpus, dictionary, chunksize)
+    #model = train_hdp_model(corpus, dictionary, chunksize)
 
     c_v = compute_c_v(model, texts, dictionary, processes=3)
     u_mass = compute_u_mass(model, texts, dictionary, processes=3)
@@ -281,7 +281,7 @@ def train_topic_model(corpus, dictionary, texts, num_topics=15, chunksize=2000, 
 
 
 # Cannot be visualized
-def train_lda_mallet_model(corpus, eval_every, id2word, iterations, num_topics, workers):
+def train_lda_mallet_model(corpus, eval_every, id2word, iterations, num_topics, workers=config.NUM_CORES):
     model = LdaMallet('./Mallet/bin/mallet', corpus=corpus, id2word=id2word, iterations=iterations, num_topics=num_topics, optimize_interval=eval_every, workers=workers, prefix='/tmp/')
     return model
 
@@ -292,12 +292,13 @@ def train_lda_model(corpus, chunksize, eval_every, id2word, iterations, num_topi
     return model
 
 
-def train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, workers):
-    model = LdaMulticore(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='symmetric', eta='auto', iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every, workers=config.NUM_CORES, random_state=config.SEED)
+def train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, workers=config.NUM_CORES - 1):
+    model = LdaMulticore(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='symmetric', eta='auto', iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every, workers=workers, random_state=config.SEED)
     return model
 
 
 # http://proceedings.mlr.press/v15/wang11a/wang11a.pdf
+# Does not support coherence
 def train_hdp_model(corpus, dictionary, chunksize):
     model = HdpModel(corpus=corpus, id2word=dictionary, chunksize=chunksize, random_state=config.SEED)
     # To get the topic words from the model
