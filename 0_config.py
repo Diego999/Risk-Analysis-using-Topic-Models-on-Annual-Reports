@@ -5,6 +5,8 @@ SF_NLP_JARS = './lib/stanford-corenlp-full-2017-06-09/*'
 STOPWORD_LIST = './stopwords_big.txt'
 FORCE_PREPROCESSING = False
 
+TUNING = True
+
 MULTITHREADING = True
 NUM_CORES = multiprocessing.cpu_count()
 SEED = 0
@@ -12,6 +14,7 @@ SEED = 0
 EXTENSION_10K_REPORT = 'txt'
 EXTENSION_CLEAN_PREPROCESSING = 'txt_clean'
 
+OUTPUT_FOLDER = os.path.join('.', 'out/')
 DATA_FOLDER = os.path.join('.', 'data/')
 DATA_GZ_FOLDER = os.path.join(DATA_FOLDER, 'gz')
 DATA_PD_FOLDER = os.path.join(DATA_FOLDER, 'pd')

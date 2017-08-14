@@ -4,6 +4,7 @@ import re
 import stanford_corenlp_pywrapper
 import utils
 import logging
+import sys
 import numpy
 import collections
 import random
@@ -263,14 +264,14 @@ def visualize(model, corpus, dictionary):
 
 
 # Chunksize should be fine w.r.t. https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation.pdf
-def train_topic_model(corpus, dictionary, texts, num_topics=15, chunksize=2000, passes=10, iterations=400, eval_every=10):
+def train_topic_model(corpus, dictionary, texts, num_topics=15, chunksize=2000, decay=0.5, offset=1.0, passes=10, iterations=400, eval_every=10):
     temp = dictionary[0]  # This is only to "load" the dictionary.
     id2word = dictionary.id2token
 
     # LDA https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation.pdf
-    #model = train_lda_model(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes)
+    #model = train_lda_model(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, )
     # LDA Multicore
-    model = train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, workers=3)
+    model = train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, workers=3)
     # HDP http://proceedings.mlr.press/v15/wang11a/wang11a.pdf
     #model = train_hdp_model(corpus, dictionary, chunksize)
 
@@ -287,13 +288,13 @@ def train_lda_mallet_model(corpus, eval_every, id2word, iterations, num_topics, 
 
 
 # https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation.pdf
-def train_lda_model(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes):
-    model = LdaModel(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='auto', eta='auto', iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every, random_state=config.SEED)
+def train_lda_model(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset):
+    model = LdaModel(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='auto', eta='auto', decay=decay, offset=offset, iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every, random_state=config.SEED)
     return model
 
 
-def train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, workers=config.NUM_CORES - 1):
-    model = LdaMulticore(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='symmetric', eta='auto', iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every, workers=workers, random_state=config.SEED)
+def train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, workers=config.NUM_CORES - 1):
+    model = LdaMulticore(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='symmetric', eta='auto', iterations=iterations, decay=decay, offset=offset, num_topics=num_topics, passes=passes, eval_every=eval_every, workers=workers, random_state=config.SEED)
     return model
 
 
@@ -323,6 +324,9 @@ if __name__ == "__main__":
     numpy.random.seed(config.SEED)
     random.seed(config.SEED)
 
+    if not os.path.exists(config.OUTPUT_FOLDER):
+        os.makedirs(config.OUTPUT_FOLDER)
+
     sections_to_analyze = [config.DATA_1A_FOLDER]
     for section in sections_to_analyze:
         data = load_and_clean_data(section)
@@ -330,10 +334,30 @@ if __name__ == "__main__":
 
         corpus, dictionary, texts = preprocessing_topic(data, idx_to_lemma)
 
-        num_topics=15
-        model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10)
-        filename = section + '_' + 'num:' + str(num_topics) + '_cu:' + str(u_mass) + '_cv:' + str(c_v) + '.txt'
-        with open(filename, 'w') as fp:
-            fp.write(filename + '\n')
+        # Train
+        if not config.TUNING:
+            num_topics = 15
+            model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10)
+            visualize(model, corpus, dictionary)
+        else: # Tune
+            # chuncksize € [1, 4, 16, 64, 256, 1024, 2048, 4096]
+            # k (decay) € [0.9, 0.8, 0.7, 0.6, 0.5]
+            # t (eta) € [1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1]
 
-        visualize(model, corpus, dictionary)
+            assert len(sys.argv) == 4 or len(sys.argv) == 7
+            num_topics, max_try, seed = [int(x) for x in sys.argv[1:4]]
+            chunksize, kappa, eta = [float(x) for x in sys.argv[4:]] if len(sys.argv) > 4 else [2000, 0.5, 1.0]
+            chunksize, eta = int(chunksize), int(eta)
+            numpy.random.seed(seed)
+            random.seed(seed)
+            print('Args: ', num_topics, max_try, seed, chunksize, kappa, eta)
+
+            for i in range(max_try):
+                config.SEED = random.randint(1, 100000)
+                model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=chunksize, decay=kappa, offset=eta, passes=10, iterations=400, eval_every=10)
+
+                filename = section[section.rfind('/')+1:] + 'k:' + str(kappa) + '_eta:' + str(eta) + '_topics:' + str(num_topics) + '_cu:' + str(round(u_mass, 4)) + '_cv:' + str(round(c_v,4)) + '.txt'
+                print(filename)
+                filename = os.path.join(config.OUTPUT_FOLDER, filename)
+                with open(filename, 'w') as fp:
+                    fp.write(filename + '\n')
