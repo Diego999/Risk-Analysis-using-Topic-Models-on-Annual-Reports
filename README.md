@@ -2,7 +2,7 @@
 Download annual report 10-k of companies through U.S. Securities and Exchange Commission from first quarter 1993 to last quarter of the current year.
 
 # Requirements
-It relies on Python 3.5.
+It relies on Python 3.5. Due to a bug somewhere in Python & Gensim with multiprocessing, don't forget to run `export OMP_NUM_THREADS=1 && python3 myfile.py` for the step 4.
 
 # Description
 
