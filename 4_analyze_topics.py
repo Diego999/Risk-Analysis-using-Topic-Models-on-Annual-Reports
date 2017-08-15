@@ -195,7 +195,6 @@ def preprocess_util(data):
 
         for p in procs:
             p.join()
-
     else:
         final_data = [None]
         preprocess_util_thread(data, final_data, 0)
@@ -319,6 +318,21 @@ def compute_u_mass(model, texts, dictionary, processes=config.NUM_CORES):
     return CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='u_mass', processes=processes).get_coherence()
 
 
+def tune_topic_model_process(corpus, dictionary, texts, num_topics_range, chunksize, decay, offset, passes=10, iterations=400, eval_every=10):
+    for num_topics in num_topics_range:
+        train_and_write_score_topic_model(corpus, dictionary, texts, num_topics, chunksize, decay, offset, passes, iterations, eval_every)
+
+
+def train_and_write_score_topic_model(corpus, dictionary, texts, num_topics, chunksize, decay, offset, passes=10, iterations=400, eval_every=10):
+    print(num_topics, chunksize, decay, offset, passes, iterations, eval_every)
+    model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=chunksize, decay=decay, offset=offset, passes=passes, iterations=iterations, eval_every=eval_every)
+    filename = section[section.rfind('/') + 1:] + 'k:' + str(kappa) + '_eta:' + str(eta) + '_topics:' + str( num_topics) + '_cu:' + str(round(u_mass, 4)) + '_cv:' + str(round(c_v, 4)) + '.txt'
+    print(filename)
+    filename = os.path.join(config.OUTPUT_FOLDER, filename)
+    with open(filename, 'w') as fp:
+        fp.write(filename + '\n')
+
+
 if __name__ == "__main__":
     #logging.getLogger().setLevel(logging.INFO)
     numpy.random.seed(config.SEED)
@@ -352,12 +366,21 @@ if __name__ == "__main__":
             random.seed(seed)
             print('Args: ', num_topics, max_try, seed, chunksize, kappa, eta)
 
-            for i in range(max_try):
-                config.SEED = random.randint(1, 100000)
-                model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=chunksize, decay=kappa, offset=eta, passes=10, iterations=400, eval_every=10)
+            # Tune only number of topics
+            if num_topics == -1:
+                nb_parallel_runs = max_try
+                topic_range = list(range(1, 100))
+                topic_range = utils.chunks(topic_range, 1 + int(len(topic_range) / nb_parallel_runs))
 
-                filename = section[section.rfind('/')+1:] + 'k:' + str(kappa) + '_eta:' + str(eta) + '_topics:' + str(num_topics) + '_cu:' + str(round(u_mass, 4)) + '_cv:' + str(round(c_v,4)) + '.txt'
-                print(filename)
-                filename = os.path.join(config.OUTPUT_FOLDER, filename)
-                with open(filename, 'w') as fp:
-                    fp.write(filename + '\n')
+                procs = []
+                for i in range(nb_parallel_runs):
+                    procs.append(Process(target=tune_topic_model_process, args=(corpus, dictionary, texts, topic_range[i], chunksize, kappa, eta, 10, 400, 10,)))
+                    procs[-1].start()
+
+                for p in procs:
+                    p.join()
+
+            else:
+                for i in range(max_try):
+                    config.SEED = random.randint(1, 100000)
+                    tune_topic_model_process(corpus, dictionary, texts, num_topics, chunksize, kappa, eta, passes=10, iterations=400, eval_every=10)
