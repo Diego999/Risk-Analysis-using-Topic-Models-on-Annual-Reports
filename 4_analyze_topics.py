@@ -326,7 +326,7 @@ def tune_topic_model_process(corpus, dictionary, texts, num_topics_range, chunks
 def train_and_write_score_topic_model(corpus, dictionary, texts, num_topics, chunksize, decay, offset, passes=10, iterations=400, eval_every=10):
     print(num_topics, chunksize, decay, offset, passes, iterations, eval_every)
     model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=chunksize, decay=decay, offset=offset, passes=passes, iterations=iterations, eval_every=eval_every)
-    filename = section[section.rfind('/') + 1:] + 'k:' + str(kappa) + '_eta:' + str(eta) + '_topics:' + str( num_topics) + '_cu:' + str(round(u_mass, 4)) + '_cv:' + str(round(c_v, 4)) + '.txt'
+    filename = section[section.rfind('/') + 1:] + 'k:' + str(kappa) + '_eta:' + str(eta) + '_topics:' + str( num_topics) + '_cu:' + str(round(u_mass, 4)) + '_cv:' + str(round(c_v, 4)) + '_rnd:' + str(config.SEED) + '.txt'
     print(filename)
     filename = os.path.join(config.OUTPUT_FOLDER, filename)
     with open(filename, 'w') as fp:
