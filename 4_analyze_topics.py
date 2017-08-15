@@ -270,12 +270,12 @@ def train_topic_model(corpus, dictionary, texts, num_topics=15, chunksize=2000, 
     # LDA https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation.pdf
     #model = train_lda_model(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, )
     # LDA Multicore
-    model = train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, workers=3)
+    model = train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, workers=config.NUM_CORES)
     # HDP http://proceedings.mlr.press/v15/wang11a/wang11a.pdf
     #model = train_hdp_model(corpus, dictionary, chunksize)
 
-    c_v = compute_c_v(model, texts, dictionary, processes=3)
-    u_mass = compute_u_mass(model, texts, dictionary, processes=3)
+    c_v = compute_c_v(model, texts, dictionary, processes=config.NUM_CORES)
+    u_mass = compute_u_mass(model, texts, dictionary, processes=config.NUM_CORES)
 
     return model, c_v, u_mass
 
@@ -292,7 +292,7 @@ def train_lda_model(corpus, chunksize, eval_every, id2word, iterations, num_topi
     return model
 
 
-def train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, workers=config.NUM_CORES - 1):
+def train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, workers=int(config.NUM_CORES)/2 - 1):
     model = LdaMulticore(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='symmetric', eta='auto', iterations=iterations, decay=decay, offset=offset, num_topics=num_topics, passes=passes, eval_every=eval_every, workers=workers, random_state=config.SEED)
     return model
 
