@@ -370,7 +370,7 @@ if __name__ == "__main__":
             if num_topics == -1:
                 nb_parallel_runs = max_try
                 topic_range = list(range(1, 100))
-                topic_range = utils.chunks(topic_range, 1 + int(len(topic_range) / nb_parallel_runs))
+                topic_range = utils.chunks(topic_range, int(len(topic_range) / nb_parallel_runs))
 
                 procs = []
                 for i in range(nb_parallel_runs):
