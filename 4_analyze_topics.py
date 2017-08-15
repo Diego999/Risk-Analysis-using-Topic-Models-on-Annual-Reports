@@ -369,7 +369,7 @@ if __name__ == "__main__":
             # Tune only number of topics
             if num_topics == -1:
                 nb_parallel_runs = max_try
-                topic_range = list(range(1, 100))
+                topic_range = random.shuffle(list(range(1, 100)))
                 topic_range = utils.chunks(topic_range, int(len(topic_range) / nb_parallel_runs))
 
                 procs = []
@@ -379,7 +379,6 @@ if __name__ == "__main__":
 
                 for p in procs:
                     p.join()
-
             else:
                 for i in range(max_try):
                     config.SEED = random.randint(1, 100000)
