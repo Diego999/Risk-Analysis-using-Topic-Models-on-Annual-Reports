@@ -360,6 +360,8 @@ if __name__ == "__main__":
 
     if not os.path.exists(config.OUTPUT_FOLDER):
         os.makedirs(config.OUTPUT_FOLDER)
+    if not os.path.exists(config.MODEL_FOLDER):
+        os.makedirs(config.MODEL_FOLDER)
 
     sections_to_analyze = [config.DATA_1A_FOLDER]
     for section in sections_to_analyze:
@@ -374,6 +376,7 @@ if __name__ == "__main__":
             num_topics = config.ITEM_1A_TOPICS
             model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10, model_file=model_file)
             if model_file is not None:
+            if model_file is None:
                 model.save('new_model.model')
             visualize(model, corpus, dictionary)
         else: # Tune
