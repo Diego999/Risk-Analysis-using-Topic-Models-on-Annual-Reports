@@ -5,7 +5,7 @@ SF_NLP_JARS = './lib/stanford-corenlp-full-2017-06-09/*'
 STOPWORD_LIST = './stopwords_big.txt'
 FORCE_PREPROCESSING = False
 
-TUNING = True
+TUNING = False
 
 MULTITHREADING = True
 NUM_CORES = multiprocessing.cpu_count()
@@ -58,7 +58,7 @@ ITEM_1A_DIFF_OFFSET_KEEP_BOTH = 500
 ITEM_1A_AGG_METHOD = max
 ITEM_1A_LINES_TO_READ_IF_NO_NEXT_INDEX = 420 # 75 percentile rank
 ITEM_1A_TOPICS = 6
-ITEM_1A_MODEL = os.path.join(MODEL_FOLDER, 'no_model')
+ITEM_1A_MODEL = os.path.join(MODEL_FOLDER, 'new_model.model')
 
 ITEM_7_DIFF_OFFSET_KEEP_BOTH = -1
 ITEM_7_AGG_METHOD = min
