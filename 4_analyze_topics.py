@@ -350,7 +350,7 @@ if __name__ == "__main__":
 
         # Train
         if not config.TUNING:
-            num_topics = 15
+            num_topics = config.ITEM_1A_TOPICS
             model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10)
             visualize(model, corpus, dictionary)
         else: # Tune
