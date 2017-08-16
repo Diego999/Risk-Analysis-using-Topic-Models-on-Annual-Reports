@@ -15,6 +15,7 @@ EXTENSION_10K_REPORT = 'txt'
 EXTENSION_CLEAN_PREPROCESSING = 'txt_clean'
 
 OUTPUT_FOLDER = os.path.join('.', 'out/')
+MODEL_FOLDER = os.path.join('.', 'models/')
 DATA_FOLDER = os.path.join('.', 'data/')
 DATA_GZ_FOLDER = os.path.join(DATA_FOLDER, 'gz')
 DATA_PD_FOLDER = os.path.join(DATA_FOLDER, 'pd')
@@ -57,6 +58,7 @@ ITEM_1A_DIFF_OFFSET_KEEP_BOTH = 500
 ITEM_1A_AGG_METHOD = max
 ITEM_1A_LINES_TO_READ_IF_NO_NEXT_INDEX = 420 # 75 percentile rank
 ITEM_1A_TOPICS = 28
+ITEM_1A_MODEL = os.path.join(MODEL_FOLDER, '')
 
 ITEM_7_DIFF_OFFSET_KEEP_BOTH = -1
 ITEM_7_AGG_METHOD = min

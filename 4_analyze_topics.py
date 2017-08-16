@@ -263,16 +263,24 @@ def visualize(model, corpus, dictionary):
 
 
 # Chunksize should be fine w.r.t. https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation.pdf
-def train_topic_model(corpus, dictionary, texts, num_topics=15, chunksize=2000, decay=0.5, offset=1.0, passes=10, iterations=400, eval_every=10):
+def train_topic_model(corpus, dictionary, texts, num_topics=15, chunksize=2000, decay=0.5, offset=1.0, passes=10, iterations=400, eval_every=10, model_file=None):
     temp = dictionary[0]  # This is only to "load" the dictionary.
     id2word = dictionary.id2token
 
-    # LDA https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation.pdf
-    #model = train_lda_model(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, )
-    # LDA Multicore
-    model = train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, workers=config.NUM_CORES)
-    # HDP http://proceedings.mlr.press/v15/wang11a/wang11a.pdf
-    #model = train_hdp_model(corpus, dictionary, chunksize)
+    if model_file is None:
+        # LDA https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation.pdf
+        #model = train_lda_model(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, )
+        # LDA Multicore
+        model = train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, workers=config.NUM_CORES)
+        # HDP http://proceedings.mlr.press/v15/wang11a/wang11a.pdf
+        #model = train_hdp_model(corpus, dictionary, chunksize)
+    else:
+        # LDA
+        # model = load_lda_model(model_file)
+        # LDA Multicore
+        model = load_lda_model_multicores(model_file)
+        # HDP
+        # model = load_hdp_model(model_file)
 
     c_v = compute_c_v(model, texts, dictionary, processes=config.NUM_CORES)
     u_mass = compute_u_mass(model, texts, dictionary, processes=config.NUM_CORES)
@@ -286,15 +294,27 @@ def train_lda_mallet_model(corpus, eval_every, id2word, iterations, num_topics, 
     return model
 
 
+def load_lda_mallet_model(filepath):
+    return LdaMallet.load(filepath)
+
+
 # https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation.pdf
 def train_lda_model(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset):
     model = LdaModel(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='auto', eta='auto', decay=decay, offset=offset, iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every, random_state=config.SEED)
     return model
 
 
+def load_lda_model(filepath):
+    return LdaModel.load(filepath)
+
+
 def train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, workers=int(config.NUM_CORES)/2 - 1):
     model = LdaMulticore(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='symmetric', eta='auto', iterations=iterations, decay=decay, offset=offset, num_topics=num_topics, passes=passes, eval_every=eval_every, workers=workers, random_state=config.SEED)
     return model
+
+
+def load_lda_model_multicores(filepath):
+    return LdaMulticore.load(filepath)
 
 
 # http://proceedings.mlr.press/v15/wang11a/wang11a.pdf
@@ -350,10 +370,15 @@ if __name__ == "__main__":
 
         # Train
         if not config.TUNING:
+            model_file = config.ITEM_1A_MODEL if os.path.exists(config.ITEM_1A_MODEL) else None
             num_topics = config.ITEM_1A_TOPICS
-            model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10)
+            model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10, model_file=model_file)
+            if model_file is not None:
+                model.save('new_model.model')
             visualize(model, corpus, dictionary)
         else: # Tune
+            # alpha € 'asymmetric', 'symmetric'
+            # eta € 'asymmetric', 'symmetric'
             # chuncksize € [1, 4, 16, 64, 256, 1024, 2048, 4096]
             # k (decay) € [0.9, 0.8, 0.7, 0.6, 0.5]
             # t (eta) € [1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1]
