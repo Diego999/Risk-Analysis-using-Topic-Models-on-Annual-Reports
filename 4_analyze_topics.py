@@ -263,15 +263,15 @@ def visualize(model, corpus, dictionary):
 
 
 # Chunksize should be fine w.r.t. https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation.pdf
-def train_topic_model(corpus, dictionary, texts, num_topics=15, chunksize=2000, decay=0.5, offset=1.0, passes=10, iterations=400, eval_every=10, model_file=None):
+def train_topic_model(corpus, dictionary, texts, num_topics=15, chunksize=2000, decay=0.5, offset=1.0, passes=10, iterations=400, eval_every=10, alpha='symmetric', eta='auto', model_file=None):
     temp = dictionary[0]  # This is only to "load" the dictionary.
     id2word = dictionary.id2token
 
     if model_file is None:
         # LDA https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation.pdf
-        #model = train_lda_model(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, )
+        #model = train_lda_model(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, alpha, eta)
         # LDA Multicore
-        model = train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, workers=config.NUM_CORES)
+        model = train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, alpha, eta, workers=config.NUM_CORES)
         # HDP http://proceedings.mlr.press/v15/wang11a/wang11a.pdf
         #model = train_hdp_model(corpus, dictionary, chunksize)
     else:
@@ -299,8 +299,8 @@ def load_lda_mallet_model(filepath):
 
 
 # https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation.pdf
-def train_lda_model(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset):
-    model = LdaModel(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='auto', eta='auto', decay=decay, offset=offset, iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every, random_state=config.SEED)
+def train_lda_model(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, alpha='auto', eta='auto'):
+    model = LdaModel(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha=alpha, eta=eta, decay=decay, offset=offset, iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every, random_state=config.SEED)
     return model
 
 
@@ -308,8 +308,8 @@ def load_lda_model(filepath):
     return LdaModel.load(filepath)
 
 
-def train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, workers=int(config.NUM_CORES)/2 - 1):
-    model = LdaMulticore(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='symmetric', eta='auto', iterations=iterations, decay=decay, offset=offset, num_topics=num_topics, passes=passes, eval_every=eval_every, workers=workers, random_state=config.SEED)
+def train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, alpha='symmetric', eta='auto', workers=int(config.NUM_CORES)/2 - 1):
+    model = LdaMulticore(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha=alpha, eta=eta, iterations=iterations, decay=decay, offset=offset, num_topics=num_topics, passes=passes, eval_every=eval_every, workers=workers, random_state=config.SEED)
     return model
 
 
@@ -338,15 +338,15 @@ def compute_u_mass(model, texts, dictionary, processes=config.NUM_CORES):
     return CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='u_mass', processes=processes).get_coherence()
 
 
-def tune_topic_model_process(corpus, dictionary, texts, num_topics_range, chunksize, decay, offset, passes=10, iterations=400, eval_every=10):
+def tune_topic_model_process(corpus, dictionary, texts, num_topics_range, chunksize, decay, offset, alpha='symmetric', eta='auto', passes=10, iterations=400, eval_every=10):
     for num_topics in num_topics_range:
-        train_and_write_score_topic_model(corpus, dictionary, texts, num_topics, chunksize, decay, offset, passes, iterations, eval_every)
+        train_and_write_score_topic_model(corpus, dictionary, texts, num_topics, chunksize, decay, offset, alpha, eta, passes, iterations, eval_every)
 
 
-def train_and_write_score_topic_model(corpus, dictionary, texts, num_topics, chunksize, decay, offset, passes=10, iterations=400, eval_every=10):
-    print(num_topics, chunksize, decay, offset, passes, iterations, eval_every)
-    model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=chunksize, decay=decay, offset=offset, passes=passes, iterations=iterations, eval_every=eval_every)
-    filename = section[section.rfind('/') + 1:] + '_k:' + str(kappa) + '_eta:' + str(eta) + '_topics:' + str( num_topics) + '_cu:' + str(round(u_mass, 4)) + '_cv:' + str(round(c_v, 4)) + '_rnd:' + str(config.SEED) + '.txt'
+def train_and_write_score_topic_model(corpus, dictionary, texts, num_topics, chunksize, decay, offset, alpha='symmetric', eta='auto', passes=10, iterations=400, eval_every=10):
+    print(num_topics, chunksize, decay, offset, alpha, eta, passes, iterations, eval_every)
+    model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, alpha=alpha, eta=eta, chunksize=chunksize, decay=decay, offset=offset, passes=passes, iterations=iterations, eval_every=eval_every)
+    filename = section[section.rfind('/') + 1:] + '_k:' + str(decay) + '_tau:' + str(offset) + '_alpha:' + alpha + '_eta:' + eta + '_topics:' + str( num_topics) + '_cu:' + str(round(u_mass, 4)) + '_cv:' + str(round(c_v, 4)) + '_rnd:' + str(config.SEED) + '.txt'
     print(filename)
     filename = os.path.join(config.OUTPUT_FOLDER, filename)
     with open(filename, 'w') as fp:
@@ -374,30 +374,24 @@ if __name__ == "__main__":
         if not config.TUNING:
             model_file = config.ITEM_1A_MODEL if os.path.exists(config.ITEM_1A_MODEL) else None
             num_topics = config.ITEM_1A_TOPICS
-            model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10, model_file=model_file)
-            if model_file is not None:
+            model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10, alpha='symmetric', eta='auto', model_file=model_file)
             if model_file is None:
                 model.save('new_model.model')
             visualize(model, corpus, dictionary)
         else: # Tune
-            # alpha € 'asymmetric', 'symmetric'
-            # eta € 'asymmetric', 'symmetric'
-            # chuncksize € [1, 4, 16, 64, 256, 1024, 2048, 4096]
-            # k (decay) € [0.9, 0.8, 0.7, 0.6, 0.5]
-            # t (eta) € [1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1]
-
             assert len(sys.argv) == 4 or len(sys.argv) == 7
-            num_topics, max_try, seed = [int(x) for x in sys.argv[1:4]]
+            only_topics, max_try, seed = [int(x) for x in sys.argv[1:4]]
             chunksize, kappa, eta = [float(x) for x in sys.argv[4:]] if len(sys.argv) > 4 else [2000, 0.5, 1.0]
             chunksize, eta = int(chunksize), int(eta)
             numpy.random.seed(seed)
             random.seed(seed)
-            print('Args: ', num_topics, max_try, seed, chunksize, kappa, eta)
+            print('Args: ', only_topics, max_try, seed, chunksize, kappa, eta)
 
             # Tune only number of topics
-            if num_topics == -1:
+            if only_topics == -1:
                 nb_parallel_runs = max_try
-                topic_range = random.shuffle(list(range(1, 100)))
+                topic_range = list(range(1, 100))
+                random.shuffle(topic_range)
                 topic_range = utils.chunks(topic_range, int(len(topic_range) / nb_parallel_runs))
 
                 procs = []
@@ -408,6 +402,22 @@ if __name__ == "__main__":
                 for p in procs:
                     p.join()
             else:
+                alpha_range = ['asymmetric', 'symmetric']
+                eta_range = ['symmetric', 'auto']
+                topic_range = [6, 28]
+
+                chuncksize_range = [64, 128, 256, 512, 1024, 2048, 4096, 8192]
+                kappa_range = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]  # Decay
+                tau_range = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096]  # Offset
+
                 for i in range(max_try):
                     config.SEED = random.randint(1, 100000)
-                    tune_topic_model_process(corpus, dictionary, texts, num_topics, chunksize, kappa, eta, passes=10, iterations=400, eval_every=10)
+
+                    alpha = utils.draw_val(alpha_range)
+                    eta = utils.draw_val(eta_range)
+                    num_topics = utils.draw_val(topic_range)
+                    chunksize = utils.draw_val(chuncksize_range)
+                    kappa = utils.draw_val(kappa_range)
+                    tau = utils.draw_val(tau_range)
+
+                    tune_topic_model_process(corpus, dictionary, texts, [num_topics], chunksize, kappa, tau, alpha, eta, passes=10, iterations=400, eval_every=10)

@@ -1,7 +1,13 @@
 import pymysql
 import os
 import pickle
+import random
 config = __import__('0_config')
+
+
+# Simple uniform sampling between[0, len(array)-1]
+def draw_val(array):
+    return array[random.randint(0, len(array)-1)]
 
 
 def extract_year_from_filename_annual_report(filename):
