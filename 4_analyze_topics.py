@@ -281,7 +281,6 @@ def train_topic_model(corpus, dictionary, texts, num_topics=15, chunksize=2000, 
         model = load_lda_model_multicores(model_file)
         # HDP
         # model = load_hdp_model(model_file)
-
     c_v = compute_c_v(model, texts, dictionary, processes=config.NUM_CORES)
     u_mass = compute_u_mass(model, texts, dictionary, processes=config.NUM_CORES)
 
@@ -377,6 +376,8 @@ if __name__ == "__main__":
             model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10, alpha='symmetric', eta='auto', model_file=model_file)
             if model_file is None:
                 model.save(os.path.join(config.MODEL_FOLDER, 'new_model.model'))
+            else:
+                print('c_v:' + str(round(c_v, 4)) + ', cu:' + str(round(u_mass, 4)))
             visualize(model, corpus, dictionary)
         else: # Tune
             assert len(sys.argv) == 4 or len(sys.argv) == 7
