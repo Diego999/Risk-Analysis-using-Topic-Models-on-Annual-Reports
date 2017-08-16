@@ -376,7 +376,7 @@ if __name__ == "__main__":
             num_topics = config.ITEM_1A_TOPICS
             model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10, alpha='symmetric', eta='auto', model_file=model_file)
             if model_file is None:
-                model.save('new_model.model')
+                model.save(os.path.join(config.MODEL_FOLDER, 'new_model.model'))
             visualize(model, corpus, dictionary)
         else: # Tune
             assert len(sys.argv) == 4 or len(sys.argv) == 7
