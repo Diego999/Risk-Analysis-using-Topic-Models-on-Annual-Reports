@@ -56,15 +56,15 @@ def check_param_topic():
 
 
 def check_tuning(k=5):
-    results = config.OUTPUT_FOLDER + '/*.txt'
+    results = glob.glob(config.OUTPUT_FOLDER + '/*.txt')
     parsed_data = []
     for r in results:
         vals = r[:r.rfind('.')].split('_')
-        t = {k:float(v) for k,v in [v.split(':') for v in vals if ':' in v]}
+        t = {k:v for k,v in [v.split(':') for v in vals if ':' in v]}
         parsed_data.append(t)
 
-    parsed_data_sorted_by_cu = sorted(parsed_data, key=lambda x:-x['cu'])
-    parsed_data_sorted_by_cv = sorted(parsed_data, key=lambda x:-x['cv'])
+    parsed_data_sorted_by_cu = sorted(parsed_data, key=lambda x:-float(x['cu']))
+    parsed_data_sorted_by_cv = sorted(parsed_data, key=lambda x:-float(x['cv']))
 
     for i, (cu, cv) in enumerate(zip(parsed_data_sorted_by_cu[:k], parsed_data_sorted_by_cv[:k])):
         cu_sorted = sorted(cu.items(), key=lambda x:x[0])
@@ -73,7 +73,7 @@ def check_tuning(k=5):
         print('Best #{} (cu, cv)'.format(i+1))
         for a, b in zip(cu_sorted, cv_sorted):
             assert a[0] == b[0]
-            print('\t', '\t', a[0], '\t', '\t', round(a[1], 4), '\t', '\t', round(b[1], 4))
+            print('\t', '\t', a[0], '\t', '\t', round(a[1], 4) if not isinstance(a[1], str) else a[1], '\t', '\t', round(b[1], 4) if not isinstance(b[1], str) else b[1])
 
 
 if __name__ == "__main__":
