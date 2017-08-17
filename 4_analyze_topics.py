@@ -299,6 +299,7 @@ def load_lda_mallet_model(filepath):
 
 # https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation.pdf
 def train_lda_model(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, alpha='auto', eta='auto'):
+    print('LDA model')
     model = LdaModel(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha=alpha, eta=eta, decay=decay, offset=offset, iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every, random_state=config.SEED)
     return model
 
@@ -308,6 +309,7 @@ def load_lda_model(filepath):
 
 
 def train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, alpha='symmetric', eta='auto', workers=int(config.NUM_CORES)/2 - 1):
+    print('LDA Multicore model')
     model = LdaMulticore(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha=alpha, eta=eta, iterations=iterations, decay=decay, offset=offset, num_topics=num_topics, passes=passes, eval_every=eval_every, workers=workers, random_state=config.SEED)
     return model
 
@@ -319,6 +321,7 @@ def load_lda_model_multicores(filepath):
 # http://proceedings.mlr.press/v15/wang11a/wang11a.pdf
 # Does not support coherence
 def train_hdp_model(corpus, dictionary, chunksize):
+    print('HDP model')
     model = HdpModel(corpus=corpus, id2word=dictionary, chunksize=chunksize, random_state=config.SEED)
     # To get the topic words from the model
     topics = []
@@ -376,8 +379,7 @@ if __name__ == "__main__":
             model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10, alpha='symmetric', eta='auto', model_file=model_file)
             if model_file is None:
                 model.save(os.path.join(config.MODEL_FOLDER, 'new_model.model'))
-            else:
-                print('c_v:' + str(round(c_v, 4)) + ', cu:' + str(round(u_mass, 4)))
+            print('c_v:' + str(round(c_v, 4)) + ', cu:' + str(round(u_mass, 4)))
             visualize(model, corpus, dictionary)
         else: # Tune
             assert len(sys.argv) == 4 or len(sys.argv) == 7
