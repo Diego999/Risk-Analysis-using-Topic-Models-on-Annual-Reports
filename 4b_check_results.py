@@ -55,7 +55,7 @@ def check_param_topic():
     plt.show()
 
 
-def check_tuning(k=5):
+def check_tuning(k=3):
     results = glob.glob(config.OUTPUT_FOLDER + '/*.txt')
     parsed_data = []
     for r in results:
