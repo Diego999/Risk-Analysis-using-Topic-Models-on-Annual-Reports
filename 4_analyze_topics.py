@@ -331,6 +331,10 @@ def train_hdp_model(corpus, dictionary, chunksize):
     return model
 
 
+def load_hdp_model(filepath):
+    return HdpModel.load(filepath)
+
+
 # C_V should be the best estimator w.r.t http://svn.aksw.org/papers/2015/WSDM_Topic_Evaluation/public.pdf
 def compute_c_v(model, texts, dictionary, processes=config.NUM_CORES):
     return CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v', processes=processes).get_coherence()
