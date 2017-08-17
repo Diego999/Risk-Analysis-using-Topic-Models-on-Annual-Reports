@@ -61,6 +61,8 @@ ITEM_1A_TOPICS = 28
 ITEM_1A_MODEL = os.path.join(MODEL_FOLDER, 'mac/lda_28.model')
 ITEM_1A_MODEL_VIZ = ITEM_1A_MODEL.replace('.model', '.html')
 
+DO_COMPUTE_COHERENCE = False
+
 ITEM_7_DIFF_OFFSET_KEEP_BOTH = -1
 ITEM_7_AGG_METHOD = min
 ITEM_7_LINES_TO_READ_IF_NO_NEXT_INDEX = 752 # 75 percentile rank

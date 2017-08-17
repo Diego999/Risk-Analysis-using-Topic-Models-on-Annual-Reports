@@ -264,7 +264,7 @@ def visualize(model, corpus, dictionary):
 
 
 # Chunksize should be fine w.r.t. https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation.pdf
-def train_topic_model(corpus, dictionary, texts, num_topics=15, chunksize=2000, decay=0.5, offset=1.0, passes=10, iterations=400, eval_every=10, alpha='symmetric', eta='auto', model_file=None):
+def train_topic_model(corpus, dictionary, texts, num_topics=15, chunksize=2000, decay=0.5, offset=1.0, passes=10, iterations=400, eval_every=10, alpha='symmetric', eta='auto', model_file=None, only_viz=False):
     temp = dictionary[0]  # This is only to "load" the dictionary.
     id2word = dictionary.id2token
 
@@ -274,16 +274,17 @@ def train_topic_model(corpus, dictionary, texts, num_topics=15, chunksize=2000, 
         # LDA Multicore
         model = train_lda_model_multicores(corpus, chunksize, eval_every, id2word, iterations, num_topics, passes, decay, offset, alpha, eta, workers=config.NUM_CORES)
         # HDP http://proceedings.mlr.press/v15/wang11a/wang11a.pdf
-        #model = train_hdp_model(corpus, dictionary, chunksize)
+        #model = train_hdp_model(corpus, dictionary, chunksize); only_viz = True
     else:
         # LDA
         # model = load_lda_model(model_file)
         # LDA Multicore
         model = load_lda_model_multicores(model_file)
         # HDP
-        # model = load_hdp_model(model_file)
-    c_v = compute_c_v(model, texts, dictionary, processes=config.NUM_CORES)
-    u_mass = compute_u_mass(model, texts, dictionary, processes=config.NUM_CORES)
+        #model = load_hdp_model(model_file); only_viz = True
+
+    c_v = compute_c_v(model, texts, dictionary, processes=config.NUM_CORES) if not only_viz else True
+    u_mass = compute_u_mass(model, texts, dictionary, processes=config.NUM_CORES) if not only_viz else True
 
     return model, c_v, u_mass
 
@@ -352,7 +353,7 @@ def tune_topic_model_process(corpus, dictionary, texts, num_topics_range, chunks
 
 def train_and_write_score_topic_model(corpus, dictionary, texts, num_topics, chunksize, decay, offset, alpha='symmetric', eta='auto', passes=10, iterations=400, eval_every=10):
     print(num_topics, chunksize, decay, offset, alpha, eta, passes, iterations, eval_every)
-    model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, alpha=alpha, eta=eta, chunksize=chunksize, decay=decay, offset=offset, passes=passes, iterations=iterations, eval_every=eval_every)
+    model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, alpha=alpha, eta=eta, chunksize=chunksize, decay=decay, offset=offset, passes=passes, iterations=iterations, eval_every=eval_every, only_viz=False)
     filename = section[section.rfind('/') + 1:] + '_k:' + str(decay) + '_tau:' + str(offset) + '_alpha:' + alpha + '_eta:' + eta + '_topics:' + str( num_topics) + '_cu:' + str(round(u_mass, 4)) + '_cv:' + str(round(c_v, 4)) + '_rnd:' + str(config.SEED) + '.txt'
     print(filename)
     filename = os.path.join(config.OUTPUT_FOLDER, filename)
@@ -381,7 +382,7 @@ if __name__ == "__main__":
         if not config.TUNING:
             model_file = config.ITEM_1A_MODEL if os.path.exists(config.ITEM_1A_MODEL) else None
             num_topics = config.ITEM_1A_TOPICS
-            model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10, alpha='symmetric', eta='auto', model_file=model_file)
+            model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10, alpha='symmetric', eta='auto', model_file=model_file, only_viz=config.DO_COMPUTE_COHERENCE)
             if model_file is None:
                 model.save(os.path.join(config.MODEL_FOLDER, 'new_model.model'))
             print('c_v:' + str(round(c_v, 4)) + ', cu:' + str(round(u_mass, 4)))
