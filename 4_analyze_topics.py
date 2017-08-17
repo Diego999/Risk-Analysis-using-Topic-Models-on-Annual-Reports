@@ -259,6 +259,7 @@ def preprocessing_topic(data, idx_to_lemma):
 def visualize(model, corpus, dictionary):
     if CAN_VISUALIZE:
         prepared = pyLDAvis.gensim.prepare(model, corpus, dictionary)
+        pyLDAvis.save_html(prepared, config.ITEM_1A_MODEL_VIZ)
         pyLDAvis.show(prepared)
 
 

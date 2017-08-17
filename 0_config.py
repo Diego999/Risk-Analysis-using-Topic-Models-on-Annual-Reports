@@ -59,6 +59,7 @@ ITEM_1A_AGG_METHOD = max
 ITEM_1A_LINES_TO_READ_IF_NO_NEXT_INDEX = 420 # 75 percentile rank
 ITEM_1A_TOPICS = 6
 ITEM_1A_MODEL = os.path.join(MODEL_FOLDER, 'new_model.model')
+ITEM_1A_MODEL_VIZ = ITEM_1A_MODEL.replace('.model', '.html')
 
 ITEM_7_DIFF_OFFSET_KEEP_BOTH = -1
 ITEM_7_AGG_METHOD = min
