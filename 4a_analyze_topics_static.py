@@ -283,8 +283,8 @@ def train_topic_model(corpus, dictionary, texts, num_topics=15, chunksize=2000, 
         # HDP
         #model = load_hdp_model(model_file); only_viz = True
 
-    c_v = compute_c_v(model, texts, dictionary, processes=config.NUM_CORES) if not only_viz else True
-    u_mass = compute_u_mass(model, texts, dictionary, processes=config.NUM_CORES) if not only_viz else True
+    c_v = compute_c_v(model, texts, dictionary, processes=config.NUM_CORES) if not only_viz else 0
+    u_mass = compute_u_mass(model, texts, dictionary, processes=config.NUM_CORES) if not only_viz else 0
 
     return model, c_v, u_mass
 
@@ -382,7 +382,7 @@ if __name__ == "__main__":
         if not config.TUNING:
             model_file = config.ITEM_1A_MODEL if os.path.exists(config.ITEM_1A_MODEL) else None
             num_topics = config.ITEM_1A_TOPICS
-            model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10, alpha='symmetric', eta='auto', model_file=model_file, only_viz=config.DO_COMPUTE_COHERENCE)
+            model, c_v, u_mass = train_topic_model(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10, alpha='symmetric', eta='auto', model_file=model_file, only_viz=config.DO_NOT_COMPUTE_COHERENCE)
             if model_file is None:
                 model.save(os.path.join(config.MODEL_FOLDER, 'new_model.model'))
             print('c_v:' + str(round(c_v, 4)) + ', cu:' + str(round(u_mass, 4)))
