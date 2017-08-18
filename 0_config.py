@@ -64,7 +64,7 @@ MIN_LINES_KEYWORDS_1A = 50
 REMOVE_START_WORDS_1A = ['item #a risk factors risk factors',
                          'item #a risk factors',
                          'item #arisk factors',
-                         'item #a - risk factors -', #TODO remove
+                         'item #a - risk factors',
                          'risk factors and uncertainties',
                          'risk factors risk factors',
                          'risk factors',
