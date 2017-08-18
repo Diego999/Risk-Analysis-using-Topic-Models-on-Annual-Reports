@@ -57,6 +57,19 @@ READ_SECTION_EVEN_NO_OFFSET_END = False
 ITEM_1A_DIFF_OFFSET_KEEP_BOTH = 500
 ITEM_1A_AGG_METHOD = max
 ITEM_1A_LINES_TO_READ_IF_NO_NEXT_INDEX = 420 # 75 percentile rank
+KEYWORDS_TO_DETECT_1A = ['smaller reporting company', 'pages', 'discussion and analysis of financial condition']
+MIN_LENGTH_EMPTY_1A = 400 # MIN chars in the section to be kept
+MIN_LENGTH_KEYWORDS_1A = 5000 # For all texts having less than MIN_LENGTH_KEYWORDS chars and less than MIN_LINES_KEYWORDS lines, remove them if they contain KEYWORDS_TO_DETECT_1A
+MIN_LINES_KEYWORDS_1A = 50
+REMOVE_START_WORDS_1A = ['item #a risk factors risk factors',
+                         'item #a risk factors',
+                         'item #arisk factors',
+                         'item #a - risk factors -', #TODO remove
+                         'risk factors and uncertainties',
+                         'risk factors risk factors',
+                         'risk factors',
+                         'item #a']
+
 ITEM_1A_TOPICS = 28
 ITEM_1A_MODEL = os.path.join(MODEL_FOLDER, 'mac/lda_28.model')
 ITEM_1A_MODEL_VIZ = ITEM_1A_MODEL.replace('.model', '.html')
@@ -70,6 +83,41 @@ ITEM_7_LINES_TO_READ_IF_NO_NEXT_INDEX = 752 # 75 percentile rank
 ITEM_7A_DIFF_OFFSET_KEEP_BOTH = -1
 ITEM_7A_AGG_METHOD = max
 ITEM_7A_LINES_TO_READ_IF_NO_NEXT_INDEX = 49 # 75 percentile rank
+KEYWORDS_TO_DETECT_7A = ['disclose the applicable market risk', 'pages', 'discussion and analysis of financial condition', 'discussion and analysis of results', 'herein by reference']
+MIN_LENGTH_EMPTY_7A = 411 # MIN chars in the section to be kept
+MIN_LENGTH_KEYWORDS_7A = 1000 # For all texts having less than MIN_LENGTH_KEYWORDS chars and less than MIN_LINES_KEYWORDS lines, remove them if they contain KEYWORDS_TO_DETECT_1A
+MIN_LINES_KEYWORDS_7A = 10
+REMOVE_START_WORDS_7A = ['item #a - quantitative and qualitative disclosures about market risk -',
+                         'item #a quantitative and qualitative disclosures about market risk',
+                         'item #a quantitative and qualitative disclosure about market risk',
+                         'item #a qualitative and quantitative disclosures about market risk',
+                         'item #a qualitative and quantitative disclosure about market risk',
+                         'item #a quantative and qualitive disclosures about market risk',
+                         'item #a quantitative and qualitative disclosures about market',
+                         'item #a quantitative and qualitative disclosure about market',
+                         'item #a qualitative and quantitative disclosures about market',
+                         'item #a qualitative and quantitative disclosure about market',
+                         'item #a - quantitative and qualitative disclosures about market risk',
+                         'quantitative and qualitative disclosures about market risk -',
+                         'quantitative and qualitative disclosures about market risk',
+                         'quantitative and qualitative disclosure about market risk',
+                         'qualitative and quantitative disclosures about market risk',
+                         'qualitative and quantitative disclosure about market risk',
+                         'quantative and qualitive disclosures about market risk',
+                         'quantitative and qualitative disclosures about market',
+                         'quantitative and qualitative disclosure about market',
+                         'qualitative and quantitative disclosures about market',
+                         'qualitative and quantitative disclosure about market',
+                         'quantitative and qualitative disclosures about market risk',
+                         'item #a market risks',
+                         'item #a market',
+                         'item #a',
+                         'item #'
+                         ]
+
+CLEAN_PARAMETERS = {DATA_1A_FOLDER: [KEYWORDS_TO_DETECT_1A, MIN_LENGTH_EMPTY_1A, MIN_LENGTH_KEYWORDS_1A, MIN_LINES_KEYWORDS_1A, REMOVE_START_WORDS_1A],
+                    DATA_7A_FOLDER: [KEYWORDS_TO_DETECT_7A, MIN_LENGTH_EMPTY_7A, MIN_LENGTH_KEYWORDS_7A, MIN_LINES_KEYWORDS_7A, REMOVE_START_WORDS_7A]}
+
 
 # Key words to look up
 KEY_WORDS_LOOKUP_FISCAL_YEAR_END = ['FISCAL YEAR END', 'CONFORMED PERIOD OF REPORT', 'fiscal year ended', 'fiscal period ended', 'year ended']

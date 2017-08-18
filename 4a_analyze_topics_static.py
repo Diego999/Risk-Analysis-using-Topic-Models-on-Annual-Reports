@@ -37,15 +37,13 @@ def remove_header_and_multiple_lines(buffer):
     return text.split('\n')
 
 
-def content_relevant(buffer):
-    keywords = ['smaller reporting company', 'pages', 'discussion and analysis of financial condition']
+def content_relevant(buffer, KEYWORDS_TO_DETECT, MIN_LENGTH_EMPTY, MIN_LENGTH_KEYWORDS, MIN_LINES_KEYWORDS, REMOVE_START_WORDS):
     text = ''.join(buffer).lower()
-
-    if len(text) < 400:
+    if len(text) < MIN_LENGTH_EMPTY:
         return False
 
-    if len(buffer) < 50 and len(text) < 5000:
-        for kw in keywords:
+    if len(buffer) < MIN_LINES_KEYWORDS and len(text) < MIN_LENGTH_KEYWORDS:
+        for kw in KEYWORDS_TO_DETECT:
             if kw in text:
                 return False
 
@@ -59,7 +57,7 @@ pattern_remove_multiple_dash = re.compile(r'-+')
 pattern_map_digit_to_hash = re.compile(r'[0-9]+')
 pattern_html_tags = re.compile('<.*?>')
 pattern_multiple_hash = re.compile(r'#+')
-def clean(buffer):
+def clean(buffer, KEYWORDS_TO_DETECT, MIN_LENGTH_EMPTY, MIN_LENGTH_KEYWORDS, MIN_LINES_KEYWORDS, REMOVE_START_WORDS):
     text = ' '.join(buffer).lower()
     text = re.sub(pattern_html_tags, ' ', text)
     text = re.sub(pattern_non_char_digit_hash_perc_dash, ' ', text)
@@ -68,7 +66,32 @@ def clean(buffer):
     text = re.sub(pattern_remove_new_lines, ' ', text)
     text = re.sub(pattern_remove_multiple_space, ' ', text)
     text = re.sub(pattern_multiple_hash, '#', text)
+    text = text.strip()
+
+    for remove_start_words in REMOVE_START_WORDS:
+        if text.startswith(remove_start_words):
+            text = text[len(remove_start_words) + 1:]
+            while text[0] in [' ', '-', '#']:
+                text = text[1:]
+            break
+
     return text.strip()
+
+
+def load_and_clean_data_process(items, section, storage, pid):
+    cleaned_data = []
+    for i, item in enumerate(items):
+        buffer = []
+        with open(item, 'r', encoding='utf-8') as fp:
+            for l in fp:
+                buffer.append(l)
+        print(i)
+        buffer = remove_header_and_multiple_lines(buffer)
+        ll = len(''.join(buffer).lower())
+        if content_relevant(buffer, *config.CLEAN_PARAMETERS[section]):
+            cleaned_data.append((ll, len(buffer), item, clean(buffer, *config.CLEAN_PARAMETERS[section])[:1000]))
+
+    storage[pid] = cleaned_data
 
 
 def load_and_clean_data(section):
@@ -76,21 +99,29 @@ def load_and_clean_data(section):
     cleaned_data = []
     if config.FORCE_PREPROCESSING or not os.path.exists(cleaned_data_file):
         items = read_section(section)
-        for item in items:
-            buffer = []
-            with open(item, 'r', encoding='utf-8') as fp:
-                for l in fp:
-                    buffer.append(l)
+        manager = Manager()
 
-            buffer = remove_header_and_multiple_lines(buffer)
-            if content_relevant(buffer):
-                cleaned_data.append((item, clean(buffer)))
+        if config.MULTITHREADING:
+            items_chunk = utils.chunks(items, 1 + int(len(items) / config.NUM_CORES))
+            final_data = manager.list([[]] * config.NUM_CORES)
+
+            procs = []
+            for i in range(config.NUM_CORES):
+                procs.append(Process(target=load_and_clean_data_process, args=(items_chunk[i], section, final_data, i)))
+                procs[-1].start()
+
+            for p in procs:
+                p.join()
+        else:
+            final_data = [None]
+            load_and_clean_data_process(items, section, final_data, 0)
+        cleaned_data = sum(final_data, [])
 
         print('{}: Keep {} over {} ({:.2f}%)'.format(section[section.rfind('/') + 1:], len(cleaned_data), len(items), float(len(cleaned_data)) / len(items) * 100.0))
 
         with open(cleaned_data_file, 'w', encoding='utf-8') as fp:
-            for i, l in cleaned_data:
-                fp.write(i + '\t' + l + '\n')
+            for ll, k, i, l in cleaned_data:
+                fp.write(str(ll) + '\t' + str(k) + '\t' + i + '\t' + l + '\n')
     else:
         with open(cleaned_data_file, 'r', encoding='utf-8') as fp:
             for l in fp:
