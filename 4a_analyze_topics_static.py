@@ -427,7 +427,7 @@ if __name__ == "__main__":
             # Tune only number of topics
             if only_topics == -1:
                 nb_parallel_runs = max_try
-                topic_range = list(range(1, 100))
+                topic_range = list(range(1, 101))
                 random.shuffle(topic_range)
                 topic_range = utils.chunks(topic_range, int(len(topic_range) / nb_parallel_runs))
 
