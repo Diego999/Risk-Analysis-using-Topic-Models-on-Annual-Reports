@@ -85,11 +85,10 @@ def load_and_clean_data_process(items, section, storage, pid):
         with open(item, 'r', encoding='utf-8') as fp:
             for l in fp:
                 buffer.append(l)
-        print(i)
+
         buffer = remove_header_and_multiple_lines(buffer)
-        ll = len(''.join(buffer).lower())
         if content_relevant(buffer, *config.CLEAN_PARAMETERS[section]):
-            cleaned_data.append((ll, len(buffer), item, clean(buffer, *config.CLEAN_PARAMETERS[section])[:1000]))
+            cleaned_data.append((item, clean(buffer, *config.CLEAN_PARAMETERS[section])))
 
     storage[pid] = cleaned_data
 
@@ -120,8 +119,8 @@ def load_and_clean_data(section):
         print('{}: Keep {} over {} ({:.2f}%)'.format(section[section.rfind('/') + 1:], len(cleaned_data), len(items), float(len(cleaned_data)) / len(items) * 100.0))
 
         with open(cleaned_data_file, 'w', encoding='utf-8') as fp:
-            for ll, k, i, l in cleaned_data:
-                fp.write(str(ll) + '\t' + str(k) + '\t' + i + '\t' + l + '\n')
+            for i, l in cleaned_data:
+                fp.write(i + '\t' + l + '\n')
     else:
         with open(cleaned_data_file, 'r', encoding='utf-8') as fp:
             for l in fp:
