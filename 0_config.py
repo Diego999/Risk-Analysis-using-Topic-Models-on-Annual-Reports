@@ -73,6 +73,7 @@ REMOVE_START_WORDS_1A = ['item #a risk factors risk factors',
 ITEM_1A_TOPICS = 28
 ITEM_1A_MODEL = os.path.join(MODEL_FOLDER, 'mac/lda_28.model')
 ITEM_1A_MODEL_VIZ = ITEM_1A_MODEL.replace('.model', '.html')
+ITEM_1A_MODEL_DYN = ITEM_1A_MODEL.replace('.model', '.model_dyn')
 
 DO_NOT_COMPUTE_COHERENCE = True
 
