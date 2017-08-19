@@ -281,7 +281,7 @@ def preprocessing_topic(data, idx_to_lemma):
     print('Number of unique tokens: %d' % len(dictionary))
     print('Number of documents: %d' % len(corpus))
 
-    return corpus, dictionary, texts
+    return corpus, dictionary, texts, time_slices
 
 
 # w.r.t. https://nlp.stanford.edu/events/illvi2014/papers/sievert-illvi2014.pdf
@@ -404,7 +404,6 @@ if __name__ == "__main__":
     for section in sections_to_analyze:
         data = load_and_clean_data(section)
         data, lemma_to_idx, idx_to_lemma = preprocess(section, data)
-        corpus, dictionary, texts = preprocessing_topic(data, idx_to_lemma)
         corpus, dictionary, texts, time_slices = preprocessing_topic(data, idx_to_lemma)
 
         # Train
