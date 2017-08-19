@@ -73,7 +73,6 @@ def clean(buffer, KEYWORDS_TO_DETECT, MIN_LENGTH_EMPTY, MIN_LENGTH_KEYWORDS, MIN
             text = text[len(remove_start_words) + 1:]
             while text[0] in [' ', '-', '#']:
                 text = text[1:]
-            break
 
     return text.strip()
 
@@ -406,6 +405,7 @@ if __name__ == "__main__":
         data = load_and_clean_data(section)
         data, lemma_to_idx, idx_to_lemma = preprocess(section, data)
         corpus, dictionary, texts = preprocessing_topic(data, idx_to_lemma)
+        corpus, dictionary, texts, time_slices = preprocessing_topic(data, idx_to_lemma)
 
         # Train
         if not config.TUNING:
