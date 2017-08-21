@@ -286,9 +286,9 @@ def preprocessing_topic(data, idx_to_lemma):
 
 # w.r.t. https://nlp.stanford.edu/events/illvi2014/papers/sievert-illvi2014.pdf
 def visualize(model, corpus, dictionary, html_filepath):
+    prepared = pyLDAvis.gensim.prepare(model, corpus, dictionary)
+    pyLDAvis.save_html(prepared, html_filepath)
     if CAN_VISUALIZE:
-        prepared = pyLDAvis.gensim.prepare(model, corpus, dictionary)
-        pyLDAvis.save_html(prepared, html_filepath)
         pyLDAvis.show(prepared)
 
 
@@ -434,7 +434,7 @@ if __name__ == "__main__":
 
                 procs = []
                 for i in range(nb_parallel_runs):
-                    procs.append(Process(target=tune_topic_model_process, args=(corpus, dictionary, texts, topic_range[i], chunksize, kappa, eta, 10, 400, 10,)))
+                    procs.append(Process(target=tune_topic_model_process, args=(corpus, dictionary, texts, topic_range[i], chunksize, kappa, eta, 'symmetric', 'auto', 10, 400, 10,)))
                     procs[-1].start()
 
                 for p in procs:
