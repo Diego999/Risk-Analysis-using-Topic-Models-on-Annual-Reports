@@ -58,7 +58,7 @@ def check_param_topic():
         plt.ylabel('Coherence score (CU)')
         plt.xticks(np.arange(min(x) - 1, max(x) + 1, 5.0))
 
-    plt.show()
+        plt.show()
 
 
 def check_tuning(k=3):
