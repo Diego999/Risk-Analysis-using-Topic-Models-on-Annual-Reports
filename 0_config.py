@@ -71,7 +71,7 @@ REMOVE_START_WORDS_1A = ['item #a risk factors risk factors',
                          'item #a']
 
 ITEM_1A_TOPICS = 28
-ITEM_1A_MODEL = os.path.join(MODEL_FOLDER, 'mac/lda_28.model')
+ITEM_1A_MODEL = os.path.join(MODEL_FOLDER, 'mac/lda_{}.model',format(ITEM_1A_TOPICS))
 ITEM_1A_MODEL_VIZ = ITEM_1A_MODEL.replace('.model', '.html')
 ITEM_1A_MODEL_DYN = ITEM_1A_MODEL.replace('.model', '.model_dyn')
 
@@ -211,6 +211,10 @@ REMOVE_START_WORDS_7 = sorted(['item # management s discussion and analysis of f
                         "management's discussion and analysis of financial condition and - - results of operations",
                         'item #'], key=lambda x:-len(x))
 
+ITEM_7A_TOPICS = 13
+ITEM_7A_MODEL = os.path.join(MODEL_FOLDER, 'mac/lda_{}.model',format(ITEM_7A_TOPICS))
+ITEM_7A_MODEL_VIZ = ITEM_7A_MODEL.replace('.model', '.html')
+ITEM_7A_MODEL_DYN = ITEM_7A_MODEL.replace('.model', '.model_dyn')
 ITEM_7A_DIFF_OFFSET_KEEP_BOTH = -1
 ITEM_7A_AGG_METHOD = max
 ITEM_7A_LINES_TO_READ_IF_NO_NEXT_INDEX = 49 # 75 percentile rank
@@ -250,7 +254,8 @@ CLEAN_PARAMETERS = {DATA_1A_FOLDER: [KEYWORDS_TO_DETECT_1A, MIN_LENGTH_EMPTY_1A,
                     DATA_7_FOLDER: [KEYWORDS_TO_DETECT_7, MIN_LENGTH_EMPTY_7, MIN_LENGTH_KEYWORDS_7, MIN_LINES_KEYWORDS_7, REMOVE_START_WORDS_7],
                     DATA_7A_FOLDER: [KEYWORDS_TO_DETECT_7A, MIN_LENGTH_EMPTY_7A, MIN_LENGTH_KEYWORDS_7A, MIN_LINES_KEYWORDS_7A, REMOVE_START_WORDS_7A]}
 
-
+TRAIN_PARAMETERS = {DATA_1A_FOLDER: [ITEM_1A_TOPICS, ITEM_1A_MODEL, ITEM_1A_MODEL_VIZ, ITEM_1A_MODEL_DYN],
+                    DATA_7A_FOLDER: [ITEM_7A_TOPICS, ITEM_7A_MODEL, ITEM_7A_MODEL_VIZ, ITEM_7A_MODEL_DYN]}
 # Key words to look up
 KEY_WORDS_LOOKUP_FISCAL_YEAR_END = ['FISCAL YEAR END', 'CONFORMED PERIOD OF REPORT', 'fiscal year ended', 'fiscal period ended', 'year ended']
 KEY_WORDS_LOOKUP_RELEASE_DATE_END = ['FILED AS OF DATE', 'Outstanding at', 'DATE', 'thereunto duly authorized', 'undersigned, thereunto duly', 'in the capacities indicated on the', 'thereto duly authorized', 'has been signed below on behalf', 'unto duly authorized', 'consent of independent auditors', 'duly authorized', 'pursuant to the requirements of', 'aggregate market value of the common stock']

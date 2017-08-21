@@ -285,10 +285,10 @@ def preprocessing_topic(data, idx_to_lemma):
 
 
 # w.r.t. https://nlp.stanford.edu/events/illvi2014/papers/sievert-illvi2014.pdf
-def visualize(model, corpus, dictionary):
+def visualize(model, corpus, dictionary, html_filepath):
     if CAN_VISUALIZE:
         prepared = pyLDAvis.gensim.prepare(model, corpus, dictionary)
-        pyLDAvis.save_html(prepared, config.ITEM_1A_MODEL_VIZ)
+        pyLDAvis.save_html(prepared, html_filepath)
         pyLDAvis.show(prepared)
 
 
@@ -408,13 +408,14 @@ if __name__ == "__main__":
 
         # Train
         if not config.TUNING:
-            model_file = config.ITEM_1A_MODEL if os.path.exists(config.ITEM_1A_MODEL) else None
-            num_topics = config.ITEM_1A_TOPICS
+            model_filepath = config.TRAIN_PARAMETERS[section][1]
+            model_file = model_filepath if os.path.exists(model_filepath) else None
+            num_topics = config.TRAIN_PARAMETERS[section][0]
             model, c_v, u_mass = train_topic_model_or_load(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10, alpha='symmetric', eta='auto', model_file=model_file, only_viz=config.DO_NOT_COMPUTE_COHERENCE)
             if model_file is None:
-                model.save(os.path.join(config.MODEL_FOLDER, 'new_model.model'))
+                model.save(model_filepath)
             print('c_v:' + str(round(c_v, 4)) + ', cu:' + str(round(u_mass, 4)))
-            visualize(model, corpus, dictionary)
+            visualize(model, corpus, dictionary, config.TRAIN_PARAMETERS[section][2])
         else: # Tune
             assert len(sys.argv) == 4 or len(sys.argv) == 7
             only_topics, max_try, seed = [int(x) for x in sys.argv[1:4]]
