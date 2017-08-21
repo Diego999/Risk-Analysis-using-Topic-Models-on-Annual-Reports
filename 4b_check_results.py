@@ -62,7 +62,7 @@ def check_param_topic():
 
 
 def check_tuning(k=3):
-    results = glob.glob(config.OUTPUT_FOLDER + '/*.txt')
+    results = glob.glob(config.OUTPUT_FOLDER + '/tuning/*.txt')
     parsed_data = []
     for r in results:
         vals = r[:r.rfind('.')].split('_')
