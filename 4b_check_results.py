@@ -34,7 +34,7 @@ def check_param_topic(k=8):
     parsed_data = {section:sorted(parsed_data_, key=lambda t: int(t['topics'])) for section, parsed_data_ in parsed_data.items()}
     num_topics = {section:[int(t['topics']) for t in parsed_data_] for section, parsed_data_ in parsed_data.items()}
     x = range(min([min(v) for v in num_topics.values()]), max([max(v) for v in num_topics.values()]) + 1)
-    for section, parsed_data_ in parsed_data.items():
+    for i, (section, parsed_data_) in enumerate(parsed_data.items()):
         print('{} best in Section {}'.format(k, section))
         print('cv')
         for t in sorted(parsed_data_, key=lambda x:-x['cv'])[:k]:
@@ -49,7 +49,7 @@ def check_param_topic(k=8):
         idx_max_cu, max_cu = np.argmax(cu) + min(num_topics[section]), max(cu)
         idx_max_cv, max_cv = np.argmax(cv) + min(num_topics[section]), max(cv)
 
-        plt.figure(1)
+        plt.figure(i+1)
         plt.legend('Section ' + str(section))
         plt.title('Section ' + str(section))
         plt.suptitle('Section ' + str(section))
