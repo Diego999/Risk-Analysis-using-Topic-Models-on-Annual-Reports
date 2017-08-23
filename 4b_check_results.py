@@ -5,7 +5,7 @@ import numpy as np
 config = __import__('0_config')
 
 
-def check_param_topic():
+def check_param_topic(k=8):
     results = glob.glob(os.path.join(config.OUTPUT_FOLDER, 'topics') + '/*.txt')
     parsed_data = {}
     for r in results:
@@ -33,6 +33,15 @@ def check_param_topic():
     num_topics = {section:[int(t['topics']) for t in parsed_data_] for section, parsed_data_ in parsed_data.items()}
     x = range(min([min(v) for v in num_topics.values()]), max([max(v) for v in num_topics.values()]) + 1)
     for section, parsed_data_ in parsed_data.items():
+        print('{} best in {}'.format(k, section))
+        print('cv')
+        for t in sorted(parsed_data_, key=lambda x:-x['cv'])[:k]:
+            print('\t', t)
+        print('cu')
+        for t in sorted(parsed_data_, key=lambda x:-x['cu'])[:k]:
+            print('\t', t)
+        print('')
+
         cu = [float(t['cu']) for t in parsed_data_]
         cv = [float(t['cv']) for t in parsed_data_]
         idx_max_cu, max_cu = np.argmax(cu) + min(num_topics[section]), max(cu)
