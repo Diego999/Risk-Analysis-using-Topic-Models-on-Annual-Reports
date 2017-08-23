@@ -79,7 +79,7 @@ REMOVE_START_WORDS_1A = ['item #a risk factors risk factors',
                          'item #a']
 
 
-ITEM_7_TOPICS = 66 # to be enough fine-grained. o/w 22
+ITEM_7_TOPICS = 54
 ITEM_7_MODEL = os.path.join(MODEL_FOLDER, 'lda_7_{}.model'.format(ITEM_7_TOPICS))
 ITEM_7_MODEL_VIZ = ITEM_7_MODEL.replace('.model', '.html')
 ITEM_7_MODEL_DYN = ITEM_7_MODEL.replace('.model', '.model_dyn')
@@ -217,7 +217,7 @@ REMOVE_START_WORDS_7 = sorted(['item # management s discussion and analysis of f
                         "management's discussion and analysis of financial condition and - - results of operations",
                         'item #'], key=lambda x:-len(x))
 
-ITEM_7A_TOPICS = 22 # or 19/22
+ITEM_7A_TOPICS = 8 # or 19/22
 ITEM_7A_MODEL = os.path.join(MODEL_FOLDER, 'lda_7a_{}.model'.format(ITEM_7A_TOPICS))
 ITEM_7A_MODEL_VIZ = ITEM_7A_MODEL.replace('.model', '.html')
 ITEM_7A_MODEL_DYN = ITEM_7A_MODEL.replace('.model', '.model_dyn')
