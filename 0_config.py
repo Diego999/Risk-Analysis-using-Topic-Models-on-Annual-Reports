@@ -11,6 +11,8 @@ MULTITHREADING = True
 NUM_CORES = multiprocessing.cpu_count()
 SEED = 0
 
+DO_NOT_COMPUTE_COHERENCE = True
+
 EXTENSION_10K_REPORT = 'txt'
 EXTENSION_CLEAN_PREPROCESSING = 'txt_clean'
 
@@ -54,6 +56,12 @@ LOG_FISCAL_YEAR_END_MISSING = 'missing_fiscal_year_end.txt'
 LOG_RELEASE_DATE_MISSING = 'missing_release_date.txt'
 
 READ_SECTION_EVEN_NO_OFFSET_END = False
+
+
+ITEM_1A_TOPICS = 66 # to be enough fine-grained. o/w 22
+ITEM_1A_MODEL = os.path.join(MODEL_FOLDER, 'lda_1a_{}.model'.format(ITEM_1A_TOPICS))
+ITEM_1A_MODEL_VIZ = ITEM_1A_MODEL.replace('.model', '.html')
+ITEM_1A_MODEL_DYN = ITEM_1A_MODEL.replace('.model', '.model_dyn')
 ITEM_1A_DIFF_OFFSET_KEEP_BOTH = 500
 ITEM_1A_AGG_METHOD = max
 ITEM_1A_LINES_TO_READ_IF_NO_NEXT_INDEX = 420 # 75 percentile rank
@@ -70,13 +78,11 @@ REMOVE_START_WORDS_1A = ['item #a risk factors risk factors',
                          'risk factors',
                          'item #a']
 
-ITEM_1A_TOPICS = 28
-ITEM_1A_MODEL = os.path.join(MODEL_FOLDER, 'mac/lda_{}.model',format(ITEM_1A_TOPICS))
-ITEM_1A_MODEL_VIZ = ITEM_1A_MODEL.replace('.model', '.html')
-ITEM_1A_MODEL_DYN = ITEM_1A_MODEL.replace('.model', '.model_dyn')
 
-DO_NOT_COMPUTE_COHERENCE = True
-
+ITEM_7_TOPICS = 66 # to be enough fine-grained. o/w 22
+ITEM_7_MODEL = os.path.join(MODEL_FOLDER, 'lda_7_{}.model'.format(ITEM_7_TOPICS))
+ITEM_7_MODEL_VIZ = ITEM_7_MODEL.replace('.model', '.html')
+ITEM_7_MODEL_DYN = ITEM_7_MODEL.replace('.model', '.model_dyn')
 ITEM_7_DIFF_OFFSET_KEEP_BOTH = -1
 ITEM_7_AGG_METHOD = min
 ITEM_7_LINES_TO_READ_IF_NO_NEXT_INDEX = 752 # 75 percentile rank
@@ -211,8 +217,8 @@ REMOVE_START_WORDS_7 = sorted(['item # management s discussion and analysis of f
                         "management's discussion and analysis of financial condition and - - results of operations",
                         'item #'], key=lambda x:-len(x))
 
-ITEM_7A_TOPICS = 13
-ITEM_7A_MODEL = os.path.join(MODEL_FOLDER, 'mac/lda_{}.model',format(ITEM_7A_TOPICS))
+ITEM_7A_TOPICS = 22 # or 19/22
+ITEM_7A_MODEL = os.path.join(MODEL_FOLDER, 'lda_7a_{}.model'.format(ITEM_7A_TOPICS))
 ITEM_7A_MODEL_VIZ = ITEM_7A_MODEL.replace('.model', '.html')
 ITEM_7A_MODEL_DYN = ITEM_7A_MODEL.replace('.model', '.model_dyn')
 ITEM_7A_DIFF_OFFSET_KEEP_BOTH = -1
@@ -255,6 +261,7 @@ CLEAN_PARAMETERS = {DATA_1A_FOLDER: [KEYWORDS_TO_DETECT_1A, MIN_LENGTH_EMPTY_1A,
                     DATA_7A_FOLDER: [KEYWORDS_TO_DETECT_7A, MIN_LENGTH_EMPTY_7A, MIN_LENGTH_KEYWORDS_7A, MIN_LINES_KEYWORDS_7A, REMOVE_START_WORDS_7A]}
 
 TRAIN_PARAMETERS = {DATA_1A_FOLDER: [ITEM_1A_TOPICS, ITEM_1A_MODEL, ITEM_1A_MODEL_VIZ, ITEM_1A_MODEL_DYN],
+                    DATA_7_FOLDER: [ITEM_7_TOPICS, ITEM_7_MODEL, ITEM_7_MODEL_VIZ, ITEM_7_MODEL_DYN],
                     DATA_7A_FOLDER: [ITEM_7A_TOPICS, ITEM_7A_MODEL, ITEM_7A_MODEL_VIZ, ITEM_7A_MODEL_DYN]}
 # Key words to look up
 KEY_WORDS_LOOKUP_FISCAL_YEAR_END = ['FISCAL YEAR END', 'CONFORMED PERIOD OF REPORT', 'fiscal year ended', 'fiscal period ended', 'year ended']
