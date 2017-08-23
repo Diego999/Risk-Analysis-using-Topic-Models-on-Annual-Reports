@@ -41,21 +41,21 @@ if __name__ == "__main__":
         data, lemma_to_idx, idx_to_lemma = analyze_topics_static.preprocess(section, data)
         corpus, dictionary, texts, time_slices = analyze_topics_static.preprocessing_topic(data, idx_to_lemma)
 
-        # Load a model
-        model, c_v, u_mass = analyze_topics_static.train_topic_model_or_load(corpus, dictionary, texts, model_file=config.ITEM_1A_MODEL, only_viz=config.DO_NOT_COMPUTE_COHERENCE)
+        # Load model
+        model_file = config.TRAIN_PARAMETERS[section][1]
+        assert os.path.exists(model_file)
+        num_topics = config.TRAIN_PARAMETERS[section][0]
+        model, c_v, u_mass = analyze_topics_static.train_topic_model_or_load(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10, alpha='symmetric', eta='auto', model_file=model_file, only_viz=config.DO_NOT_COMPUTE_COHERENCE)
         print('c_v:' + str(round(c_v, 4)) + ', cu:' + str(round(u_mass, 4)))
 
-        if not os.path.exists(config.ITEM_1A_MODEL_DYN):
-            dyn_model = ldaseqmodel.LdaSeqModel(initialize='ldamodel', lda_model=model, time_slice=time_slices, corpus=corpus, id2word=dictionary, num_topics=config.ITEM_1A_TOPICS, passes=10, random_state=config.SEED)
-            dyn_model.save(config.ITEM_1A_MODEL_DYN)
-        else:
-            dyn_model = ldaseqmodel.LdaSeqModel.load(config.ITEM_1A_MODEL_DYN)
+        dyn_model = ldaseqmodel.LdaSeqModel(initialize='ldamodel', lda_model=model, time_slice=time_slices, corpus=corpus, id2word=dictionary, num_topics=num_topics, passes=10, random_state=config.SEED)
+        dyn_model.save(config.ITEM_1A_MODEL_DYN)
 
+        filename = config.TRAIN_PARAMETERS[section][3]
         for t in range(0, len(time_slices)):
             doc_topic, topic_term, doc_lengths, term_frequency, vocab = dyn_model.dtm_vis(time=t, corpus=corpus)
             prepared = pyLDAvis.prepare(topic_term_dists=topic_term, doc_topic_dists=doc_topic, doc_lengths=doc_lengths, vocab=vocab, term_frequency=term_frequency)
 
-            filename = config.ITEM_1A_MODEL_VIZ
             loc_dot_ext = filename.rfind('.')
             year = config.START_YEAR + t
             filename = filename[:loc_dot_ext] + '_{}'.format(year) + filename[filename.rfind('.'):]
