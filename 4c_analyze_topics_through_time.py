@@ -45,7 +45,7 @@ if __name__ == "__main__":
         model_file = config.TRAIN_PARAMETERS[section][1]
         assert os.path.exists(model_file)
         num_topics = config.TRAIN_PARAMETERS[section][0]
-        model, c_v, u_mass = analyze_topics_static.train_topic_model_or_load(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10, alpha='symmetric', eta='auto', model_file=model_file, only_viz=config.DO_NOT_COMPUTE_COHERENCE)
+        model, c_v, u_mass = analyze_topics_static.train_topic_model_or_load(corpus, dictionary, texts, num_topics=num_topics, alpha='symmetric', eta='auto', chunksize=2000, decay=0.5, offset=1.0, passes=10, iterations=400, eval_every=10, model_file=model_file, only_viz=config.DO_NOT_COMPUTE_COHERENCE)
         print('c_v:' + str(round(c_v, 4)) + ', cu:' + str(round(u_mass, 4)))
 
         dyn_model = ldaseqmodel.LdaSeqModel(initialize='ldamodel', lda_model=model, time_slice=time_slices, corpus=corpus, id2word=dictionary, num_topics=num_topics, passes=10, random_state=config.SEED)

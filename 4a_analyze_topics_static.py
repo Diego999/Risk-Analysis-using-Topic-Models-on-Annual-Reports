@@ -411,7 +411,8 @@ if __name__ == "__main__":
             model_filepath = config.TRAIN_PARAMETERS[section][1]
             model_file = model_filepath if os.path.exists(model_filepath) else None
             num_topics = config.TRAIN_PARAMETERS[section][0]
-            model, c_v, u_mass = train_topic_model_or_load(corpus, dictionary, texts, num_topics=num_topics, chunksize=2000, passes=10, iterations=400, eval_every=10, alpha='symmetric', eta='auto', model_file=model_file, only_viz=config.DO_NOT_COMPUTE_COHERENCE)
+
+            model, c_v, u_mass = train_topic_model_or_load(corpus, dictionary, texts, num_topics=num_topics, alpha='symmetric', eta='auto', chunksize=2000, decay=0.5, offset=1.0, passes=10, iterations=400, eval_every=10, model_file=model_file, only_viz=False)#config.DO_NOT_COMPUTE_COHERENCE)
             if model_file is None:
                 model.save(model_filepath)
             print('c_v:' + str(round(c_v, 4)) + ', cu:' + str(round(u_mass, 4)))
