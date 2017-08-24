@@ -420,11 +420,11 @@ if __name__ == "__main__":
         else: # Tune
             assert len(sys.argv) == 4 or len(sys.argv) == 7
             only_topics, max_try, seed = [int(x) for x in sys.argv[1:4]]
-            chunksize, kappa, eta = [float(x) for x in sys.argv[4:]] if len(sys.argv) > 4 else [2000, 0.5, 1.0]
-            chunksize, eta = int(chunksize), int(eta)
+            chunksize, kappa, tau = [float(x) for x in sys.argv[4:]] if len(sys.argv) > 4 else [2000, 0.5, 1.0]
+            chunksize, tau = int(chunksize), int(tau)
             numpy.random.seed(seed)
             random.seed(seed)
-            print('Args: ', only_topics, max_try, seed, chunksize, kappa, eta)
+            print('Args: ', only_topics, max_try, seed, chunksize, kappa, tau)
 
             # Tune only number of topics
             if only_topics == -1:
@@ -435,7 +435,7 @@ if __name__ == "__main__":
 
                 procs = []
                 for i in range(nb_parallel_runs):
-                    procs.append(Process(target=tune_topic_model_process, args=(corpus, dictionary, texts, topic_range[i], chunksize, kappa, eta, 'symmetric', 'auto', 10, 400, 10,)))
+                    procs.append(Process(target=tune_topic_model_process, args=(corpus, dictionary, texts, topic_range[i], chunksize, kappa, tau, 'symmetric', 'auto', 10, 400, 10,)))
                     procs[-1].start()
 
                 for p in procs:
