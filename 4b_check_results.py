@@ -79,7 +79,7 @@ def check_param_topic(k=8):
 def check_tuning(k=3):
     print('Tuning analysis')
     print('')
-    results = glob.glob(os.path.join(config.OUTPUT_FOLDER, 'old-tuning') + '/*.txt')
+    results = glob.glob(os.path.join(config.OUTPUT_FOLDER, 'tuning') + '/*.txt')
     parsed_data = {}
     for r in results:
         vals = r[:r.rfind('.')].split('_')
