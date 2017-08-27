@@ -59,4 +59,4 @@ if __name__ == "__main__":
             loc_dot_ext = filename.rfind('.')
             year = config.START_YEAR + t
             filename = filename[:loc_dot_ext] + '_{}'.format(year) + filename[filename.rfind('.'):]
-            pyLDAvis.save_html(prepared, filename)
+            pyLDAvis.save_html(prepared, filename + '.html')

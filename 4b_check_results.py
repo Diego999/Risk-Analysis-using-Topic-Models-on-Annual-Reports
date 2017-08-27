@@ -76,7 +76,7 @@ def check_param_topic(k=8):
     print('')
 
 
-def check_tuning(k=3):
+def check_tuning(k=10):
     print('Tuning analysis')
     print('')
     results = glob.glob(os.path.join(config.OUTPUT_FOLDER, 'tuning') + '/*.txt')
