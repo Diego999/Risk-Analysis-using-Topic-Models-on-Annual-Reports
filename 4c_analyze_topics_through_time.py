@@ -49,9 +49,9 @@ if __name__ == "__main__":
         print('c_v:' + str(round(c_v, 4)) + ', cu:' + str(round(u_mass, 4)))
 
         dyn_model = ldaseqmodel.LdaSeqModel(initialize='ldamodel', lda_model=model, time_slice=time_slices, corpus=corpus, id2word=dictionary, num_topics=num_topics, passes=10, random_state=config.SEED)
-        dyn_model.save(config.ITEM_1A_MODEL_DYN)
-
         filename = config.TRAIN_PARAMETERS[section][3]
+        dyn_model.save(filename)
+
         for t in range(0, len(time_slices)):
             doc_topic, topic_term, doc_lengths, term_frequency, vocab = dyn_model.dtm_vis(time=t, corpus=corpus)
             prepared = pyLDAvis.prepare(topic_term_dists=topic_term, doc_topic_dists=doc_topic, doc_lengths=doc_lengths, vocab=vocab, term_frequency=term_frequency)
