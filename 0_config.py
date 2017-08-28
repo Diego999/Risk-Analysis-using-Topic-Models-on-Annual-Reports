@@ -15,8 +15,8 @@ DO_NOT_COMPUTE_COHERENCE = False
 
 EXTENSION_10K_REPORT = 'txt'
 EXTENSION_CLEAN_PREPROCESSING = 'txt_clean'
-TOPIC_EXTENSION = 'topic'
-TERMS_EXTENSION = 'term'
+TOPIC_EXTENSION = 'topic.pkl'
+TERMS_EXTENSION = 'term.pkl'
 
 OUTPUT_FOLDER = os.path.join('.', 'out/')
 MODEL_FOLDER = os.path.join('.', 'models/')

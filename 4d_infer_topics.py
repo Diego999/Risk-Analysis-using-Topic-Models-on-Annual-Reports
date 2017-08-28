@@ -29,6 +29,22 @@ def get_topics(num_topics, model, idx_to_lemma, output):
                 fp.write('\t{}\t{}\n'.format(l, p))
 
 
+def get_terms_topics(model, idx_to_lemma, output):
+    # Get terms distribution w.r.t. to each topics
+    terms_topics = []
+    for lemma_id, lemma in idx_to_lemma.items():
+        terms_topics.append((lemma, model.get_term_topics(lemma_id, 1e-20)))
+
+    # Save terms
+    with open(output, 'wb') as fp:
+        pickle.dump(terms_topics, fp)
+    with open(output + '.txt', 'w', encoding='utf-8') as fp:
+        for lemma, topic_distr in terms_topics:
+            fp.write('{}\n'.format(lemma))
+            for topic_id, topic_prob in topic_distr:
+                fp.write('\t{}\t{}\n'.format(topic_id, topic_prob))
+
+
 if __name__ == "__main__":
     #logging.getLogger().setLevel(logging.INFO)
     numpy.random.seed(config.SEED)
@@ -45,6 +61,7 @@ if __name__ == "__main__":
         model, c_v, u_mass = analyze_topics_static.train_topic_model_or_load(corpus, dictionary, texts, model_file=model_filepath, only_viz=True)
 
         get_topics(config.TRAIN_PARAMETERS[section][0], model, dictionary.id2token, config.TRAIN_PARAMETERS[section][5])
+        get_terms_topics(model, dictionary.id2token, config.TRAIN_PARAMETERS[section][5].replace(config.TOPIC_EXTENSION, config.TERMS_EXTENSION))
 
         for item, text in data:
             item = fix_item_path(item, section)
