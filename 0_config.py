@@ -15,6 +15,8 @@ DO_NOT_COMPUTE_COHERENCE = False
 
 EXTENSION_10K_REPORT = 'txt'
 EXTENSION_CLEAN_PREPROCESSING = 'txt_clean'
+TOPIC_EXTENSION = 'topic'
+TERMS_EXTENSION = 'term'
 
 OUTPUT_FOLDER = os.path.join('.', 'out/')
 MODEL_FOLDER = os.path.join('.', 'models/')
@@ -23,9 +25,19 @@ DATA_GZ_FOLDER = os.path.join(DATA_FOLDER, 'gz')
 DATA_PD_FOLDER = os.path.join(DATA_FOLDER, 'pd')
 DATA_AR_FOLDER = os.path.join(DATA_FOLDER, 'ar')
 DATA_SECTON_FOLDER = os.path.join(DATA_FOLDER, 'sections')
-DATA_1A_FOLDER = os.path.join(DATA_SECTON_FOLDER, '1a_risk_factors')
-DATA_7_FOLDER = os.path.join(DATA_SECTON_FOLDER, '7_managements_discussion_and_analysis_of_financial_condition_and_results_of_operations')
-DATA_7A_FOLDER = os.path.join(DATA_SECTON_FOLDER, '7a_quantitative_and_qualitative_disclosures_about_market_risk')
+
+SECTION_1A = '1a_risk_factors'
+DATA_1A_FOLDER = os.path.join(DATA_SECTON_FOLDER, SECTION_1A)
+DATA_1A_TOPICS = os.path.join(DATA_SECTON_FOLDER, SECTION_1A + '.' + TOPIC_EXTENSION)
+
+SECTION_7 = '7_managements_discussion_and_analysis_of_financial_condition_and_results_of_operations'
+DATA_7_FOLDER = os.path.join(DATA_SECTON_FOLDER, SECTION_7)
+DATA_7_TOPICS = os.path.join(DATA_SECTON_FOLDER, SECTION_7 + '.' + TOPIC_EXTENSION)
+
+SECTION_7A = '7a_quantitative_and_qualitative_disclosures_about_market_risk'
+DATA_7A_FOLDER = os.path.join(DATA_SECTON_FOLDER, SECTION_7A)
+DATA_7A_TOPICS = os.path.join(DATA_SECTON_FOLDER, SECTION_7A + '.' + TOPIC_EXTENSION)
+
 SUFFIX_CLEAN_DATA = '_clean.txt'
 SUFFIX_PREPROCESSED_DATA = '_preprocessed.pkl'
 SUFFIX_INPUT_DATA = '_input'
@@ -275,9 +287,10 @@ CLEAN_PARAMETERS = {DATA_1A_FOLDER: [KEYWORDS_TO_DETECT_1A, MIN_LENGTH_EMPTY_1A,
                     DATA_7_FOLDER: [KEYWORDS_TO_DETECT_7, MIN_LENGTH_EMPTY_7, MIN_LENGTH_KEYWORDS_7, MIN_LINES_KEYWORDS_7, REMOVE_START_WORDS_7],
                     DATA_7A_FOLDER: [KEYWORDS_TO_DETECT_7A, MIN_LENGTH_EMPTY_7A, MIN_LENGTH_KEYWORDS_7A, MIN_LINES_KEYWORDS_7A, REMOVE_START_WORDS_7A]}
 
-TRAIN_PARAMETERS = {DATA_1A_FOLDER: [ITEM_1A_TOPICS, ITEM_1A_MODEL, ITEM_1A_MODEL_VIZ, ITEM_1A_MODEL_DYN, ITEM_1A_PARAMS],
-                    DATA_7_FOLDER: [ITEM_7_TOPICS, ITEM_7_MODEL, ITEM_7_MODEL_VIZ, ITEM_7_MODEL_DYN, ITEM_7_PARAMS],
-                    DATA_7A_FOLDER: [ITEM_7A_TOPICS, ITEM_7A_MODEL, ITEM_7A_MODEL_VIZ, ITEM_7A_MODEL_DYN, ITEM_7A_PARAMS]}
+TRAIN_PARAMETERS = {DATA_1A_FOLDER: [ITEM_1A_TOPICS, ITEM_1A_MODEL, ITEM_1A_MODEL_VIZ, ITEM_1A_MODEL_DYN, ITEM_1A_PARAMS, os.path.join(OUTPUT_FOLDER, SECTION_1A + '.{}'.format(TOPIC_EXTENSION))],
+                    DATA_7_FOLDER: [ITEM_7_TOPICS, ITEM_7_MODEL, ITEM_7_MODEL_VIZ, ITEM_7_MODEL_DYN, ITEM_7_PARAMS, os.path.join(OUTPUT_FOLDER, SECTION_7 + '.{}'.format(TOPIC_EXTENSION))],
+                    DATA_7A_FOLDER: [ITEM_7A_TOPICS, ITEM_7A_MODEL, ITEM_7A_MODEL_VIZ, ITEM_7A_MODEL_DYN, ITEM_7A_PARAMS, os.path.join(OUTPUT_FOLDER, SECTION_7A + '.{}'.format(TOPIC_EXTENSION))]}
+
 # Key words to look up
 KEY_WORDS_LOOKUP_FISCAL_YEAR_END = ['FISCAL YEAR END', 'CONFORMED PERIOD OF REPORT', 'fiscal year ended', 'fiscal period ended', 'year ended']
 KEY_WORDS_LOOKUP_RELEASE_DATE_END = ['FILED AS OF DATE', 'Outstanding at', 'DATE', 'thereunto duly authorized', 'undersigned, thereunto duly', 'in the capacities indicated on the', 'thereto duly authorized', 'has been signed below on behalf', 'unto duly authorized', 'consent of independent auditors', 'duly authorized', 'pursuant to the requirements of', 'aggregate market value of the common stock']
