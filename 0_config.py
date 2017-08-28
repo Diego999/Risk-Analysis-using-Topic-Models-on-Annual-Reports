@@ -58,14 +58,14 @@ LOG_RELEASE_DATE_MISSING = 'missing_release_date.txt'
 READ_SECTION_EVEN_NO_OFFSET_END = False
 
 
-ITEM_1A_TOPICS = 22 # to be enough fine-grained. o/w 22
+ITEM_1A_TOPICS = 66 # to be enough fine-grained. o/w 22
 ITEM_1A_PARAMS = None
 if ITEM_1A_TOPICS == 22:
     ITEM_1A_PARAMS = {'num_topics':ITEM_1A_TOPICS, 'alpha':'asymmetric', 'eta':'auto', 'chunksize':2000, 'decay':0.6, 'offset':2.0, 'passes':10, 'iterations':400, 'eval_every':10}
 elif ITEM_1A_TOPICS == 66:
     ITEM_1A_PARAMS = {'num_topics':ITEM_1A_TOPICS, 'alpha':'symmetric', 'eta':'symmetric', 'chunksize':2000, 'decay':0.6, 'offset':8.0, 'passes':10, 'iterations':400, 'eval_every':10}
 
-ITEM_1A_MODEL = os.path.join(MODEL_FOLDER, 'lda_1a_{}.model'.format(ITEM_1A_TOPICS))
+ITEM_1A_MODEL = os.path.join(MODEL_FOLDER, 'lda_1a_{}.model'.format(ITEM_1A_TOPICS)) if ITEM_1A_PARAMS is None else os.path.join(MODEL_FOLDER, 'lda_1a_{}_best.model'.format(ITEM_1A_TOPICS))
 ITEM_1A_MODEL_VIZ = ITEM_1A_MODEL.replace('.model', '.html')
 ITEM_1A_MODEL_DYN = ITEM_1A_MODEL.replace('.model', '.model_dyn')
 ITEM_1A_DIFF_OFFSET_KEEP_BOTH = 500
@@ -89,7 +89,7 @@ ITEM_7_PARAMS = None
 if ITEM_7_TOPICS == 54:
     ITEM_7_PARAMS = {'num_topics':ITEM_7_TOPICS, 'alpha':'asymmetric', 'eta':'auto', 'chunksize':2000, 'decay':0.6, 'offset':16.0, 'passes':10, 'iterations':400, 'eval_every':10}
 
-ITEM_7_MODEL = os.path.join(MODEL_FOLDER, 'lda_7_{}.model'.format(ITEM_7_TOPICS))
+ITEM_7_MODEL = os.path.join(MODEL_FOLDER, 'lda_7_{}.model'.format(ITEM_7_TOPICS)) if ITEM_7_PARAMS is None else os.path.join(MODEL_FOLDER, 'lda_7_{}_best.model'.format(ITEM_7_TOPICS))
 ITEM_7_MODEL_VIZ = ITEM_7_MODEL.replace('.model', '.html')
 ITEM_7_MODEL_DYN = ITEM_7_MODEL.replace('.model', '.model_dyn')
 ITEM_7_DIFF_OFFSET_KEEP_BOTH = -1
@@ -233,7 +233,7 @@ if ITEM_7A_TOPICS == 19:
 elif ITEM_7A_TOPICS == 22:
     ITEM_7A_PARAMS = {'num_topics':ITEM_7A_TOPICS, 'alpha':'symmetric', 'eta':'symmetric', 'chunksize':2000, 'decay':0.5, 'offset':8.0, 'passes':10, 'iterations':400, 'eval_every':10}
 
-ITEM_7A_MODEL = os.path.join(MODEL_FOLDER, 'lda_7a_{}.model'.format(ITEM_7A_TOPICS))
+ITEM_7A_MODEL = os.path.join(MODEL_FOLDER, 'lda_7a_{}.model'.format(ITEM_7A_TOPICS)) if ITEM_7A_PARAMS is None else os.path.join(MODEL_FOLDER, 'lda_7a_{}_best.model'.format(ITEM_7A_TOPICS))
 ITEM_7A_MODEL_VIZ = ITEM_7A_MODEL.replace('.model', '.html')
 ITEM_7A_MODEL_DYN = ITEM_7A_MODEL.replace('.model', '.model_dyn')
 ITEM_7A_DIFF_OFFSET_KEEP_BOTH = -1
