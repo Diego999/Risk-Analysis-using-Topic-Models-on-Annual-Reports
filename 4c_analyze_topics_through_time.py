@@ -39,7 +39,7 @@ if __name__ == "__main__":
     for section in sections_to_analyze:
         data = analyze_topics_static.load_and_clean_data(section)
         data, lemma_to_idx, idx_to_lemma = analyze_topics_static.preprocess(section, data)
-        corpus, dictionary, texts, time_slices = analyze_topics_static.preprocessing_topic(data, idx_to_lemma)
+        corpus, dictionary, texts, time_slices, _ = analyze_topics_static.preprocessing_topic(data, idx_to_lemma)
 
         # Load model
         model_file = config.TRAIN_PARAMETERS[section][1]
