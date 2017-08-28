@@ -108,6 +108,7 @@ def check_tuning(k=10):
     print('')
     print('')
 
+
 if __name__ == "__main__":
     check_param_topic()
     check_tuning()

@@ -11,7 +11,7 @@ MULTITHREADING = True
 NUM_CORES = multiprocessing.cpu_count()
 SEED = 0
 
-DO_NOT_COMPUTE_COHERENCE = True
+DO_NOT_COMPUTE_COHERENCE = False
 
 EXTENSION_10K_REPORT = 'txt'
 EXTENSION_CLEAN_PREPROCESSING = 'txt_clean'
@@ -58,7 +58,13 @@ LOG_RELEASE_DATE_MISSING = 'missing_release_date.txt'
 READ_SECTION_EVEN_NO_OFFSET_END = False
 
 
-ITEM_1A_TOPICS = 66 # to be enough fine-grained. o/w 22
+ITEM_1A_TOPICS = 22 # to be enough fine-grained. o/w 22
+ITEM_1A_PARAMS = None
+if ITEM_1A_TOPICS == 22:
+    ITEM_1A_PARAMS = {'num_topics':ITEM_1A_TOPICS, 'alpha':'asymmetric', 'eta':'auto', 'chunksize':2000, 'decay':0.6, 'offset':2.0, 'passes':10, 'iterations':400, 'eval_every':10}
+elif ITEM_1A_TOPICS == 66:
+    ITEM_1A_PARAMS = {'num_topics':ITEM_1A_TOPICS, 'alpha':'symmetric', 'eta':'symmetric', 'chunksize':2000, 'decay':0.6, 'offset':8.0, 'passes':10, 'iterations':400, 'eval_every':10}
+
 ITEM_1A_MODEL = os.path.join(MODEL_FOLDER, 'lda_1a_{}.model'.format(ITEM_1A_TOPICS))
 ITEM_1A_MODEL_VIZ = ITEM_1A_MODEL.replace('.model', '.html')
 ITEM_1A_MODEL_DYN = ITEM_1A_MODEL.replace('.model', '.model_dyn')
@@ -78,8 +84,11 @@ REMOVE_START_WORDS_1A = ['item #a risk factors risk factors',
                          'risk factors',
                          'item #a']
 
-
 ITEM_7_TOPICS = 54
+ITEM_7_PARAMS = None
+if ITEM_7_TOPICS == 54:
+    ITEM_7_PARAMS = {'num_topics':ITEM_7_TOPICS, 'alpha':'asymmetric', 'eta':'auto', 'chunksize':2000, 'decay':0.6, 'offset':16.0, 'passes':10, 'iterations':400, 'eval_every':10}
+
 ITEM_7_MODEL = os.path.join(MODEL_FOLDER, 'lda_7_{}.model'.format(ITEM_7_TOPICS))
 ITEM_7_MODEL_VIZ = ITEM_7_MODEL.replace('.model', '.html')
 ITEM_7_MODEL_DYN = ITEM_7_MODEL.replace('.model', '.model_dyn')
@@ -217,7 +226,13 @@ REMOVE_START_WORDS_7 = sorted(['item # management s discussion and analysis of f
                         "management's discussion and analysis of financial condition and - - results of operations",
                         'item #'], key=lambda x:-len(x))
 
-ITEM_7A_TOPICS = 8 # or 19/22
+ITEM_7A_TOPICS = 22 # or 19/22
+ITEM_7A_PARAMS = None
+if ITEM_7A_TOPICS == 19:
+    ITEM_7A_PARAMS = {'num_topics':ITEM_7A_TOPICS, 'alpha':'symmetric', 'eta':'auto', 'chunksize':2000, 'decay':0.6, 'offset':64.0, 'passes':10, 'iterations':400, 'eval_every':10}
+elif ITEM_7A_TOPICS == 22:
+    ITEM_7A_PARAMS = {'num_topics':ITEM_7A_TOPICS, 'alpha':'symmetric', 'eta':'symmetric', 'chunksize':2000, 'decay':0.5, 'offset':8.0, 'passes':10, 'iterations':400, 'eval_every':10}
+
 ITEM_7A_MODEL = os.path.join(MODEL_FOLDER, 'lda_7a_{}.model'.format(ITEM_7A_TOPICS))
 ITEM_7A_MODEL_VIZ = ITEM_7A_MODEL.replace('.model', '.html')
 ITEM_7A_MODEL_DYN = ITEM_7A_MODEL.replace('.model', '.model_dyn')
@@ -260,9 +275,9 @@ CLEAN_PARAMETERS = {DATA_1A_FOLDER: [KEYWORDS_TO_DETECT_1A, MIN_LENGTH_EMPTY_1A,
                     DATA_7_FOLDER: [KEYWORDS_TO_DETECT_7, MIN_LENGTH_EMPTY_7, MIN_LENGTH_KEYWORDS_7, MIN_LINES_KEYWORDS_7, REMOVE_START_WORDS_7],
                     DATA_7A_FOLDER: [KEYWORDS_TO_DETECT_7A, MIN_LENGTH_EMPTY_7A, MIN_LENGTH_KEYWORDS_7A, MIN_LINES_KEYWORDS_7A, REMOVE_START_WORDS_7A]}
 
-TRAIN_PARAMETERS = {DATA_1A_FOLDER: [ITEM_1A_TOPICS, ITEM_1A_MODEL, ITEM_1A_MODEL_VIZ, ITEM_1A_MODEL_DYN],
-                    DATA_7_FOLDER: [ITEM_7_TOPICS, ITEM_7_MODEL, ITEM_7_MODEL_VIZ, ITEM_7_MODEL_DYN],
-                    DATA_7A_FOLDER: [ITEM_7A_TOPICS, ITEM_7A_MODEL, ITEM_7A_MODEL_VIZ, ITEM_7A_MODEL_DYN]}
+TRAIN_PARAMETERS = {DATA_1A_FOLDER: [ITEM_1A_TOPICS, ITEM_1A_MODEL, ITEM_1A_MODEL_VIZ, ITEM_1A_MODEL_DYN, ITEM_1A_PARAMS],
+                    DATA_7_FOLDER: [ITEM_7_TOPICS, ITEM_7_MODEL, ITEM_7_MODEL_VIZ, ITEM_7_MODEL_DYN, ITEM_7_PARAMS],
+                    DATA_7A_FOLDER: [ITEM_7A_TOPICS, ITEM_7A_MODEL, ITEM_7A_MODEL_VIZ, ITEM_7A_MODEL_DYN, ITEM_7A_PARAMS]}
 # Key words to look up
 KEY_WORDS_LOOKUP_FISCAL_YEAR_END = ['FISCAL YEAR END', 'CONFORMED PERIOD OF REPORT', 'fiscal year ended', 'fiscal period ended', 'year ended']
 KEY_WORDS_LOOKUP_RELEASE_DATE_END = ['FILED AS OF DATE', 'Outstanding at', 'DATE', 'thereunto duly authorized', 'undersigned, thereunto duly', 'in the capacities indicated on the', 'thereto duly authorized', 'has been signed below on behalf', 'unto duly authorized', 'consent of independent auditors', 'duly authorized', 'pursuant to the requirements of', 'aggregate market value of the common stock']
