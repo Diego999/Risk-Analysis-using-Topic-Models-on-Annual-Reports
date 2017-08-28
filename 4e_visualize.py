@@ -118,11 +118,8 @@ if __name__ == "__main__":
 
         company_names = [os.path.join(config.DATA_AR_FOLDER, os.path.join(d.split('_')[0]), config.NAME_FILE_PER_CIK) for d in docs]
         for i, n in enumerate(company_names):
-            try:
-                with open(n, 'r', encoding='utf-8') as fp:
-                    company_names[i] = ' | '.join([l.strip() for l in fp if len(l.strip()) > 0])
-            except:
-                company_names[i] = 'Unknown'
+            with open(n, 'r', encoding='utf-8') as fp:
+                company_names[i] = ' | '.join([l.strip() for l in fp if len(l.strip()) > 0])
 
         # Plot
         plot_lda = bp.figure(plot_width=1820, plot_height=950,
