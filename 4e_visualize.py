@@ -68,6 +68,10 @@ def convert_to_matrices(embeddings):
 
 
 def train_or_load_tsne(tsne_filepath, seed=config.SEED):
+    # Pickle cannot dump/load such filepath
+    if len(tsne_filepath) > 200:
+        tsne_filepath = tsne_filepath[:200]
+
     tsne_lda = None
     if os.path.exists(tsne_filepath):
         with open(tsne_filepath, 'rb') as fp:
