@@ -68,10 +68,6 @@ def convert_to_matrices(embeddings):
 
 
 def train_or_load_tsne(tsne_filepath, seed=config.SEED):
-    # Pickle cannot dump/load such filepath
-    if len(tsne_filepath) > 200:
-        tsne_filepath = tsne_filepath[:200]
-
     tsne_lda = None
     if os.path.exists(tsne_filepath):
         with open(tsne_filepath, 'rb') as fp:
@@ -103,7 +99,12 @@ if __name__ == "__main__":
         docs, vals = embeddings_matrices[section]
         nb_samples = len(docs)
 
-        tsne_lda = train_or_load_tsne(os.path.join(config.DATA_TSNE_FOLDER, section + '.pkl'))
+        filename = os.path.join(config.DATA_TSNE_FOLDER, section)
+        # Pickle cannot dump/load such filepath
+        if len(filename) > 150:
+            filename = filename[:150]
+
+        tsne_lda = train_or_load_tsne(filename + '.pkl')
 
         # Generate info for the hover tool
         five_highest_topics = []
@@ -146,4 +147,4 @@ if __name__ == "__main__":
         hover = plot_lda.select(dict(type=HoverTool))
         hover.tooltips = {"Year": "@year", "5 highest topics": "@5_highest_topics", "Filename":"@file", "Company":"@company"}
 
-        save(plot_lda, '{}.html'.format(os.path.join(config.DATA_TSNE_FOLDER, section)))
+        save(plot_lda, '{}.html'.format(filename))
