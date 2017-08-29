@@ -95,7 +95,7 @@ if __name__ == "__main__":
     embeddings = combine_embeddings(embeddings)
     embeddings_matrices = convert_to_matrices(embeddings)
 
-    for section in embeddings_matrices.keys():
+    for section in sorted(list(embeddings_matrices.keys()), key=lambda x:len(x)):
         docs, vals = embeddings_matrices[section]
         nb_samples = len(docs)
 
