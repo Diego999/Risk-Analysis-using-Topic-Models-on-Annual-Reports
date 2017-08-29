@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
         # Plot
         plot_lda = bp.figure(plot_width=1820, plot_height=950,
-                             title=section,
+                             title=section + '({} samples)'.format(nb_samples),
                              tools="pan,wheel_zoom,box_zoom,reset,hover,previewsave",
                              x_axis_type=None, y_axis_type=None, min_border=1)
 
