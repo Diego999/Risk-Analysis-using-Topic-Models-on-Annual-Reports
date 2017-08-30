@@ -1,9 +1,10 @@
 import pickle
 import numpy as np
+from scipy.spatial.distance import pdist
 import random
 import os
 import matplotlib.pyplot as plt
-from sklearn.manifold import TSNE
+from sklearn.manifold import TSNE, MDS
 from sklearn.decomposition import PCA
 from itertools import combinations
 from operator import itemgetter
@@ -14,7 +15,8 @@ from bokeh.plotting import save
 from bokeh.models import HoverTool
 config = __import__('0_config')
 
-PLOT_TOPIC_EMBEDDINGS = False
+PLOT_TOPIC_EMBEDDINGS = True
+PLOT_DISTANCE = True
 
 
 def extract_section(section):
@@ -99,6 +101,20 @@ def train_or_load_pca(pca_filepath, vals, seed=config.SEED):
             pickle.dump(pca_lda, fp)
 
     return pca_lda
+
+
+def train_or_load_mds(mds_filepath, vals, seed=config.SEED):
+    mds_lda = None
+    if os.path.exists(mds_filepath):
+        with open(mds_filepath, 'rb') as fp:
+            mds_lda = pickle.load(fp)
+    else:
+        mds_model = MDS(n_components=2, max_iter=5000, verbose=1, n_jobs=config.NUM_CORES, dissimilarity='euclidean', random_state=seed)
+        mds_lda = mds_model.fit_transform(vals)
+        with open(mds_filepath, 'wb') as fp:
+            pickle.dump(mds_lda, fp)
+
+    return mds_lda
 
 
 def get_five_highest_topics(vals):
@@ -213,6 +229,18 @@ def plot(proj_lda, docs, company_names, five_highest_topics, year_values, nb_sam
     save(plot_lda, '{}.html'.format(filename))
 
 
+def plot_dist(proj_lda, filename, title='Hist. Euclidian distance annual reports'):
+    dists = compute_pair_wise_distance(proj_lda)
+    u = np.mean(dists)
+    o = np.std(dists)
+    plt.hist(dists, bins=150)
+    plt.xlabel('Euclidian distance between 2 annual reports')
+    plt.ylabel('Frequency')
+    plt.title(title + ', u = {:.2f}, o = {:.2f}'.format(u, o))
+    plt.savefig(filename + '.png', bbox_inches='tight', dpi=200)
+    plt.gcf().clear()
+
+
 if __name__ == "__main__":
     # logging.getLogger().setLevel(logging.INFO)
     np.random.seed(config.SEED) # To choose the same set of color
@@ -222,12 +250,16 @@ if __name__ == "__main__":
     paths_num_topics = [(config.TRAIN_PARAMETERS[section][5].replace(config.TOPIC_EXTENSION, config.DOCS_EXTENSION), config.TRAIN_PARAMETERS[section][0]) for section in sections_to_analyze]
     if not os.path.exists(config.DATA_TSNE_FOLDER):
         os.makedirs(config.DATA_TSNE_FOLDER)
-    if not os.path.exists(config.DATA_TSNE_COMPANY_FOLDER):
-        os.makedirs(config.DATA_TSNE_COMPANY_FOLDER)
     if not os.path.exists(config.DATA_PCA_FOLDER):
         os.makedirs(config.DATA_PCA_FOLDER)
+    if not os.path.exists(config.DATA_MDS_FOLDER):
+        os.makedirs(config.DATA_MDS_FOLDER)
+    if not os.path.exists(config.DATA_TSNE_COMPANY_FOLDER):
+        os.makedirs(config.DATA_TSNE_COMPANY_FOLDER)
     if not os.path.exists(config.DATA_PCA_COMPANY_FOLDER):
         os.makedirs(config.DATA_PCA_COMPANY_FOLDER)
+    if not os.path.exists(config.DATA_MDS_COMPANY_FOLDER):
+        os.makedirs(config.DATA_MDS_COMPANY_FOLDER)
 
     embeddings = get_embeddings(paths_num_topics)
     embeddings = combine_embeddings(embeddings)
@@ -245,14 +277,17 @@ if __name__ == "__main__":
         # Pickle cannot dump/load such filepath
         if len(filename_pca) > 150:
             filename_pca = filename_pca[:150]
+        filename_mds = os.path.join(config.DATA_MDS_FOLDER, section)
+        # Pickle cannot dump/load such filepath
+        if len(filename_mds) > 150:
+            filename_mds = filename_mds[:150]
 
         # WARNING: t-SNE does not preserve distances nor density
         tsne_lda = train_or_load_tsne(filename_tsne + '.pkl', vals)
         pca_lda = train_or_load_pca(filename_pca + '.pkl', vals)
+        mds_lda = train_or_load_mds(filename_mds + '.pkl', vals)
 
-        for proj_lda, filename in [(tsne_lda, filename_tsne), (pca_lda, filename_pca)]:
-            if 'pca' in filename:
-                exit(-1)
+        for proj_lda, filename in [(mds_lda, filename_mds)]:#(tsne_lda, filename_tsne), (pca_lda, filename_pca)]:
             # Generate info for the plot
             five_highest_topics = get_five_highest_topics(vals)
             colors, color_keys = get_colors(docs)
@@ -262,11 +297,16 @@ if __name__ == "__main__":
             # Global plot for all companies & all years
             if PLOT_TOPIC_EMBEDDINGS:
                 plot(proj_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section + ' (all years)', colors, color_keys, filename)
+            if PLOT_DISTANCE:
+                plot_dist(proj_lda, filename + '_global')
+
             # Global plot for all companies per year
             for t in get_vals_per_year(proj_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
                 year, reduced_proj_lda, reduced_docs, reduced_vals, reduced_five_highest_topics, reduced_colors, reduced_color_keys, reduced_year_values, reduced_company_names = t
                 if PLOT_TOPIC_EMBEDDINGS:
                     plot(reduced_proj_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (year {})'.format(year), reduced_colors, reduced_color_keys, filename + '_{}'.format(year))
+                if PLOT_DISTANCE:
+                    plot_dist(reduced_proj_lda, filename + '_{}'.format(year))
 
             # Plot for each comanies and all years
             for t in get_vals_per_company(proj_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
@@ -279,3 +319,5 @@ if __name__ == "__main__":
 
                 if PLOT_TOPIC_EMBEDDINGS:
                     plot(reduced_proj_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (company {})'.format('__|__'.join(reduced_company_names)), reduced_colors, reduced_color_keys, filename_company)
+                if PLOT_DISTANCE:
+                    plot_dist(reduced_proj_lda, filename + '_{}'.format(company_id))
