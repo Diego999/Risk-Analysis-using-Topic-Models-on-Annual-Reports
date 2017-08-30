@@ -123,7 +123,7 @@ def train_or_load_ltsa(ltsa_filepath, vals, seed=config.SEED):
         with open(ltsa_filepath, 'rb') as fp:
             ltsa_lda = pickle.load(fp)
     else:
-        ltsa_model = LocallyLinearEmbedding(n_components=2, n_neighbors=35, max_iter=5000, method='ltsa', n_jobs=config.NUM_CORES, eigen_solver='auto', random_state=seed)
+        ltsa_model = LocallyLinearEmbedding(n_components=2, n_neighbors=35, max_iter=5000, method='modified', n_jobs=config.NUM_CORES, eigen_solver='auto', random_state=seed)
         ltsa_lda = ltsa_model.fit_transform(vals)
         with open(ltsa_filepath, 'wb') as fp:
             pickle.dump(ltsa_lda, fp)
