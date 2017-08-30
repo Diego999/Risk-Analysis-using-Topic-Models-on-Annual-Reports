@@ -4,7 +4,7 @@ from scipy.spatial.distance import pdist
 import random
 import os
 import matplotlib.pyplot as plt
-from sklearn.manifold import TSNE, MDS
+from sklearn.manifold import TSNE, MDS, LocallyLinearEmbedding
 from sklearn.decomposition import PCA
 from itertools import combinations
 from operator import itemgetter
@@ -115,6 +115,20 @@ def train_or_load_mds(mds_filepath, vals, seed=config.SEED):
             pickle.dump(mds_lda, fp)
 
     return mds_lda
+
+
+def train_or_load_ltsa(ltsa_filepath, vals, seed=config.SEED):
+    ltsa_lda = None
+    if os.path.exists(ltsa_filepath):
+        with open(ltsa_filepath, 'rb') as fp:
+            ltsa_lda = pickle.load(fp)
+    else:
+        ltsa_model = LocallyLinearEmbedding(n_components=2, n_neighbors=35, max_iter=5000, method='ltsa', n_jobs=config.NUM_CORES, eigen_solver='auto', random_state=seed)
+        ltsa_lda = ltsa_model.fit_transform(vals)
+        with open(ltsa_filepath, 'wb') as fp:
+            pickle.dump(ltsa_lda, fp)
+
+    return ltsa_lda
 
 
 def get_five_highest_topics(vals):
@@ -246,46 +260,28 @@ if __name__ == "__main__":
 
     sections_to_analyze = [config.DATA_1A_FOLDER, config.DATA_7_FOLDER, config.DATA_7A_FOLDER]
     paths_num_topics = [(config.TRAIN_PARAMETERS[section][5].replace(config.TOPIC_EXTENSION, config.DOCS_EXTENSION), config.TRAIN_PARAMETERS[section][0]) for section in sections_to_analyze]
-    if not os.path.exists(config.DATA_TSNE_FOLDER):
-        os.makedirs(config.DATA_TSNE_FOLDER)
-    if not os.path.exists(config.DATA_PCA_FOLDER):
-        os.makedirs(config.DATA_PCA_FOLDER)
-    if not os.path.exists(config.DATA_MDS_FOLDER):
-        os.makedirs(config.DATA_MDS_FOLDER)
-    if not os.path.exists(config.DATA_TSNE_COMPANY_FOLDER):
-        os.makedirs(config.DATA_TSNE_COMPANY_FOLDER)
-    if not os.path.exists(config.DATA_PCA_COMPANY_FOLDER):
-        os.makedirs(config.DATA_PCA_COMPANY_FOLDER)
-    if not os.path.exists(config.DATA_MDS_COMPANY_FOLDER):
-        os.makedirs(config.DATA_MDS_COMPANY_FOLDER)
+    for f in [config.DATA_TSNE_FOLDER, config.DATA_PCA_FOLDER, config.DATA_MDS_FOLDER, config.DATA_LTSA_FOLDER, config.DATA_TSNE_COMPANY_FOLDER, config.DATA_PCA_COMPANY_FOLDER, config.DATA_MDS_COMPANY_FOLDER, config.DATA_LTSA_COMPANY_FOLDER]:
+        if not os.path.exists(f):
+            os.makedirs(f)
 
     embeddings = get_embeddings(paths_num_topics)
     embeddings = combine_embeddings(embeddings)
     embeddings_matrices = convert_to_matrices(embeddings)
 
     for section in sorted(list(embeddings_matrices.keys()), key=lambda x:len(x)):
+        print('Computing Section: ' + section)
         docs, vals = embeddings_matrices[section]
         nb_samples = len(docs)
 
-        filename_tsne = os.path.join(config.DATA_TSNE_FOLDER, section)
-        # Pickle cannot dump/load such filepath
-        if len(filename_tsne) > 150:
-            filename_tsne = filename_tsne[:150]
-        filename_pca = os.path.join(config.DATA_PCA_FOLDER, section)
-        # Pickle cannot dump/load such filepath
-        if len(filename_pca) > 150:
-            filename_pca = filename_pca[:150]
-        filename_mds = os.path.join(config.DATA_MDS_FOLDER, section)
-        # Pickle cannot dump/load such filepath
-        if len(filename_mds) > 150:
-            filename_mds = filename_mds[:150]
-
         # WARNING: t-SNE does not preserve distances nor density
-        tsne_lda = train_or_load_tsne(filename_tsne + '.pkl', vals)
-        pca_lda = train_or_load_pca(filename_pca + '.pkl', vals)
-        mds_lda = train_or_load_mds(filename_mds + '.pkl', vals)
+        for folder_filename, proj_func in [(config.DATA_TSNE_FOLDER, train_or_load_tsne), (config.DATA_PCA_FOLDER, train_or_load_pca), (config.DATA_MDS_FOLDER, train_or_load_mds), (config.DATA_LTSA_FOLDER, train_or_load_ltsa)]:
+            print('Computing Method: ' + folder_filename[folder_filename.rfind('/')+1:])
+            filename = os.path.join(folder_filename, section)
+            # Pickle cannot dump/load such filepath
+            if len(filename) > 150:
+                filename = filename[:150]
 
-        for proj_lda, filename in [(tsne_lda, filename_tsne), (pca_lda, filename_pca), (mds_lda, filename_mds)]:
+            proj_lda = proj_func(filename + '.pkl', vals)
             # Generate info for the plot
             five_highest_topics = get_five_highest_topics(vals)
             colors, color_keys = get_colors(docs)

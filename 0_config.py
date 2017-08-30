@@ -30,9 +30,11 @@ DATA_DISTRIBUTION_FOLDER = os.path.join(OUTPUT_FOLDER, 'distributions')
 DATA_TSNE_FOLDER = os.path.join(OUTPUT_FOLDER, 'tsne')
 DATA_PCA_FOLDER = os.path.join(OUTPUT_FOLDER, 'pca')
 DATA_MDS_FOLDER = os.path.join(OUTPUT_FOLDER, 'mds')
+DATA_LTSA_FOLDER = os.path.join(OUTPUT_FOLDER, 'ltsa')
 DATA_TSNE_COMPANY_FOLDER = os.path.join(DATA_TSNE_FOLDER, 'company')
 DATA_PCA_COMPANY_FOLDER = os.path.join(DATA_PCA_FOLDER, 'company')
 DATA_MDS_COMPANY_FOLDER = os.path.join(DATA_MDS_FOLDER, 'company')
+DATA_LTSA_COMPANY_FOLDER = os.path.join(DATA_LTSA_FOLDER, 'company')
 
 SECTION_1A = '1a_risk_factors'
 DATA_1A_FOLDER = os.path.join(DATA_SECTON_FOLDER, SECTION_1A)
