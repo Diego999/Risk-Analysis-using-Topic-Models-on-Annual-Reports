@@ -285,7 +285,7 @@ if __name__ == "__main__":
         pca_lda = train_or_load_pca(filename_pca + '.pkl', vals)
         mds_lda = train_or_load_mds(filename_mds + '.pkl', vals)
 
-        for proj_lda, filename in [(mds_lda, filename_mds)]:#(tsne_lda, filename_tsne), (pca_lda, filename_pca)]:
+        for proj_lda, filename in [(tsne_lda, filename_tsne), (pca_lda, filename_pca), (mds_lda, filename_mds)]:
             # Generate info for the plot
             five_highest_topics = get_five_highest_topics(vals)
             colors, color_keys = get_colors(docs)
