@@ -130,6 +130,8 @@ def plot(tsne_lda, docs, company_names, five_highest_topics, year_values, nb_sam
     plot_lda.scatter(x=tsne_lda[:nb_samples, 0], y=tsne_lda[:nb_samples, 1],
                      color=colors[color_keys][:nb_samples],
                      source=bp.ColumnDataSource({
+                         "X":tsne_lda[:nb_samples, 0],
+                         "Y":tsne_lda[:nb_samples, 1],
                          "5_highest_topics": five_highest_topics[:nb_samples] if nb_samples > 1 else [five_highest_topics[:nb_samples]],
                          "year": year_values[:nb_samples] if nb_samples > 1 else [year_values[:nb_samples]],
                          "file": docs[:nb_samples] if nb_samples > 1 else [docs[:nb_samples]],
@@ -139,7 +141,7 @@ def plot(tsne_lda, docs, company_names, five_highest_topics, year_values, nb_sam
 
     # Hover tool
     hover = plot_lda.select(dict(type=HoverTool))
-    hover.tooltips = {"Year": "@year", "5 highest topics": "@5_highest_topics", "Filename": "@file",
+    hover.tooltips = {"X":"@X", "Y":"@Y", "Year": "@year", "5 highest topics": "@5_highest_topics", "Filename": "@file",
                       "Company": "@company"}
 
     save(plot_lda, '{}.html'.format(filename))
