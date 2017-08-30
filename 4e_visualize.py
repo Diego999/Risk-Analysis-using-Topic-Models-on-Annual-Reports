@@ -82,6 +82,65 @@ def train_or_load_tsne(tsne_filepath, seed=config.SEED):
     return tsne_lda
 
 
+def get_five_highest_topics(vals):
+    five_highest_topics = []
+    for embs in vals:
+        # https://stackoverflow.com/questions/6910641/how-to-get-indices-of-n-maximum-values-in-a-numpy-array
+        ind = np.argpartition(embs, -5)[-5:]
+        sorted_ind = [str(x) for x in ind[np.argsort(embs[ind])]]
+        five_highest_topics.append(' '.join(sorted_ind))
+
+    return five_highest_topics
+
+
+def get_colors(docs):
+    nb_years = datetime.datetime.now().year - config.START_YEAR + 1
+    x = np.random.random(size=nb_years) * 100
+    y = np.random.random(size=nb_years) * 100
+    z = np.random.random(size=nb_years) * 100
+    colors = np.array(["#%02x%02x%02x" % (int(r), int(g), int(b)) for r, g, b in zip(2.55 * x, 2.55 * y, 2.55 * z)])
+    color_keys = [utils.year_annual_report_comparator(int(d.split('-')[-2])) - config.START_YEAR for d in docs]  # 0 = config.START_YEAR
+
+    return colors, color_keys
+
+
+def get_year_values(color_keys, nb_samples):
+    return np.full((nb_samples), config.START_YEAR) + color_keys[:nb_samples]
+
+
+def get_company_names(docs):
+    company_names = [os.path.join(config.DATA_AR_FOLDER, os.path.join(d.split('_')[0]), config.NAME_FILE_PER_CIK) for d in docs]
+    for i, n in enumerate(company_names):
+        company_names[i] = ' | '.join([l.strip() for l in fp if len(l.strip()) > 0])
+        
+    return company_names
+
+
+def plot(tsne_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section, colors, color_keys):
+    # Plot
+    plot_lda = bp.figure(plot_width=1820, plot_height=950,
+                         title=section + ' ({} samples)'.format(nb_samples),
+                         tools="pan,wheel_zoom,box_zoom,reset,hover,previewsave",
+                         x_axis_type=None, y_axis_type=None, min_border=1)
+
+    plot_lda.scatter(x=tsne_lda[:nb_samples, 0], y=tsne_lda[:nb_samples, 1],
+                     color=colors[color_keys][:nb_samples],
+                     source=bp.ColumnDataSource({
+                         "5_highest_topics": five_highest_topics[:nb_samples],
+                         "year": year_values[:nb_samples],
+                         "file": docs[:nb_samples],
+                         "company": company_names[:nb_samples]
+                     })
+                     )
+
+    # Hover tool
+    hover = plot_lda.select(dict(type=HoverTool))
+    hover.tooltips = {"Year": "@year", "5 highest topics": "@5_highest_topics", "Filename": "@file",
+                      "Company": "@company"}
+
+    save(plot_lda, '{}.html'.format(filename))
+
+
 if __name__ == "__main__":
     # logging.getLogger().setLevel(logging.INFO)
     np.random.seed(config.SEED) # To choose the same set of color
@@ -107,45 +166,11 @@ if __name__ == "__main__":
 
         tsne_lda = train_or_load_tsne(filename + '.pkl')
 
-        # Generate info for the hover tool
-        five_highest_topics = []
-        for embs in vals:
-            # https://stackoverflow.com/questions/6910641/how-to-get-indices-of-n-maximum-values-in-a-numpy-array
-            ind = np.argpartition(embs, -5)[-5:]
-            sorted_ind = [str(x) for x in ind[np.argsort(embs[ind])]]
-            five_highest_topics.append(' '.join(sorted_ind))
+        # Generate info for the plot
+        five_highest_topics = get_five_highest_topics(vals)
+        colors, color_keys = get_colors(docs)
+        year_values = get_year_values(color_keys, nb_samples)
+        company_names = get_company_names(docs)
 
-        nb_years = datetime.datetime.now().year - config.START_YEAR + 1
-        x = np.random.random(size=nb_years) * 100
-        y = np.random.random(size=nb_years) * 100
-        z = np.random.random(size=nb_years) * 100
-        colors = np.array(["#%02x%02x%02x" % (int(r), int(g), int(b)) for r, g, b in zip(2.55 * x,  2.55 * y, 2.55 * z)])
-        color_keys = [utils.year_annual_report_comparator(int(d.split('-')[-2])) - config.START_YEAR for d in docs] # 0 = config.START_YEAR
+        plot(tsne_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section, colors, color_keys)
 
-        company_names = [os.path.join(config.DATA_AR_FOLDER, os.path.join(d.split('_')[0]), config.NAME_FILE_PER_CIK) for d in docs]
-        for i, n in enumerate(company_names):
-            with open(n, 'r', encoding='utf-8') as fp:
-                company_names[i] = ' | '.join([l.strip() for l in fp if len(l.strip()) > 0])
-
-        # Plot
-        plot_lda = bp.figure(plot_width=1820, plot_height=950,
-                             title=section + '({} samples)'.format(nb_samples),
-                             tools="pan,wheel_zoom,box_zoom,reset,hover,previewsave",
-                             x_axis_type=None, y_axis_type=None, min_border=1)
-
-        year_values = np.full((nb_samples), config.START_YEAR) + color_keys[:nb_samples]
-        plot_lda.scatter(x=tsne_lda[:nb_samples, 0], y=tsne_lda[:nb_samples, 1],
-                         color=colors[color_keys][:nb_samples],
-                         source=bp.ColumnDataSource({
-                             "5_highest_topics": five_highest_topics[:nb_samples],
-                             "year": year_values[:nb_samples],
-                             "file":docs[:nb_samples],
-                             "company":company_names[:nb_samples]
-                         })
-                         )
-
-        # Hover tool
-        hover = plot_lda.select(dict(type=HoverTool))
-        hover.tooltips = {"Year": "@year", "5 highest topics": "@5_highest_topics", "Filename":"@file", "Company":"@company"}
-
-        save(plot_lda, '{}.html'.format(filename))
