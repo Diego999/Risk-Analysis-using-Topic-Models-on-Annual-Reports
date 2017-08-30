@@ -12,6 +12,8 @@ from bokeh.plotting import save
 from bokeh.models import HoverTool
 config = __import__('0_config')
 
+PLOT_EVERYTHING = True
+
 
 def extract_section(section):
     return section[section.rfind('/')+1:section.rfind('_')]
@@ -224,13 +226,15 @@ if __name__ == "__main__":
         year_values = get_year_values(color_keys, nb_samples)
         company_names = get_company_names(docs)
 
-        # Global plot for all companies & all years
-        plot(tsne_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section + ' (all years)', colors, color_keys, filename)
+        if PLOT_EVERYTHING:
+            # Global plot for all companies & all years
+            plot(tsne_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section + ' (all years)', colors, color_keys, filename)
 
         # Global plot for all companies per year
         for t in get_vals_per_year(tsne_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
             year, reduced_tsne_lda, reduced_docs, reduced_vals, reduced_five_highest_topics, reduced_colors, reduced_color_keys, reduced_year_values, reduced_company_names = t
-            plot(reduced_tsne_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (year {})'.format(year), reduced_colors, reduced_color_keys, filename + '_{}'.format(year))
+            if PLOT_EVERYTHING:
+                plot(reduced_tsne_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (year {})'.format(year), reduced_colors, reduced_color_keys, filename + '_{}'.format(year))
 
         # Plot for each comanies and all years
         for t in get_vals_per_company(tsne_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
@@ -241,4 +245,5 @@ if __name__ == "__main__":
                 os.makedirs(folder_company)
             filename_company = os.path.join(folder_company, filename[filename.rfind('/')+1:] + '_{}'.format(company_id))
 
-            plot(reduced_tsne_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (company {})'.format('__|__'.join(reduced_company_names)), reduced_colors, reduced_color_keys, filename_company)
+            if PLOT_EVERYTHING:
+                plot(reduced_tsne_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (company {})'.format('__|__'.join(reduced_company_names)), reduced_colors, reduced_color_keys, filename_company)
