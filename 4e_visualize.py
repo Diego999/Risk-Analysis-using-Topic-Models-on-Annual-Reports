@@ -146,11 +146,9 @@ def get_year_values(color_keys, nb_samples):
 def get_company_names(docs):
     company_names = [os.path.join(config.DATA_AR_FOLDER, os.path.join(d.split('_')[0]), config.NAME_FILE_PER_CIK) for d in docs]
     for i, n in enumerate(company_names):
-        try:
-            with open(n, 'r', encoding='utf-8') as fp:
-                company_names[i] = '__|__'.join([l.strip() for l in fp if len(l.strip()) > 0])
-        except:
-            company_names[i] = ''
+        with open(n, 'r', encoding='utf-8') as fp:
+            company_names[i] = '__|__'.join([l.strip() for l in fp if len(l.strip()) > 0])
+
     return company_names
 
 
