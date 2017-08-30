@@ -69,7 +69,7 @@ def convert_to_matrices(embeddings):
     return embeddings_matrices
 
 
-def train_or_load_tsne(tsne_filepath, seed=config.SEED):
+def train_or_load_tsne(tsne_filepath, vals, seed=config.SEED):
     tsne_lda = None
     if os.path.exists(tsne_filepath):
         with open(tsne_filepath, 'rb') as fp:
@@ -121,7 +121,7 @@ def get_company_names(docs):
 def plot(tsne_lda, docs, company_names, five_highest_topics, year_values, nb_samples, title, colors, color_keys, filename):
     # Plot
     plot_lda = bp.figure(plot_width=1820, plot_height=950,
-                         title=section + ' ({} samples)'.format(nb_samples),
+                         title=title + ' ({} sample{})'.format(nb_samples, 's' if nb_samples > 1 else ''),
                          tools="pan,wheel_zoom,box_zoom,reset,hover,previewsave",
                          x_axis_type=None, y_axis_type=None, min_border=1)
 
@@ -188,7 +188,7 @@ if __name__ == "__main__":
         if len(filename) > 150:
             filename = filename[:150]
 
-        tsne_lda = train_or_load_tsne(filename + '.pkl')
+        tsne_lda = train_or_load_tsne(filename + '.pkl', vals)
 
         # Generate info for the plot
         five_highest_topics = get_five_highest_topics(vals)
