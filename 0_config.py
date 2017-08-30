@@ -28,6 +28,7 @@ DATA_AR_FOLDER = os.path.join(DATA_FOLDER, 'ar')
 DATA_SECTON_FOLDER = os.path.join(DATA_FOLDER, 'sections')
 DATA_DISTRIBUTION_FOLDER = os.path.join(OUTPUT_FOLDER, 'distributions')
 DATA_TSNE_FOLDER = os.path.join(OUTPUT_FOLDER, 'tsne')
+DATA_TSNE_COMPANY_FOLDER = os.path.join(DATA_TSNE_FOLDER, 'company')
 
 SECTION_1A = '1a_risk_factors'
 DATA_1A_FOLDER = os.path.join(DATA_SECTON_FOLDER, SECTION_1A)

@@ -112,9 +112,11 @@ def get_year_values(color_keys, nb_samples):
 def get_company_names(docs):
     company_names = [os.path.join(config.DATA_AR_FOLDER, os.path.join(d.split('_')[0]), config.NAME_FILE_PER_CIK) for d in docs]
     for i, n in enumerate(company_names):
-        company_names[i] = ' | '.join([l.strip() for l in fp if len(l.strip()) > 0])
-
-
+        try:
+            with open(n, 'r', encoding='utf-8') as fp:
+                company_names[i] = '__|__'.join([l.strip() for l in fp if len(l.strip()) > 0])
+        except:
+            company_names[i] = ''
     return company_names
 
 
@@ -165,6 +167,28 @@ def get_vals_per_year(tsne_lda, docs, vals, five_highest_topics, colors, color_k
               [company_names[i] for i in indices]
 
 
+def get_vals_per_company(tsne_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
+    company_indices = {}
+    for i, d in enumerate(docs):
+        company_id = int(d.split('_')[0])
+        if company_id not in company_indices:
+            company_indices[company_id] = []
+
+        company_indices[company_id].append(i)
+    assert sum([len(x) for x in company_indices.values()]) == len(docs)
+
+    for company_id, indices in company_indices.items():
+        yield company_id, \
+              np.take(tsne_lda, indices, axis=0), \
+              itemgetter(*indices)(docs), \
+              itemgetter(*indices)(vals), \
+              [five_highest_topics[i] for i in indices], \
+              colors, \
+              (list(itemgetter(*indices)(color_keys)) if len(indices) > 1 else [itemgetter(*indices)(color_keys)]), \
+              [year_values[i] for i in indices], \
+              [company_names[i] for i in indices]
+
+
 if __name__ == "__main__":
     # logging.getLogger().setLevel(logging.INFO)
     np.random.seed(config.SEED) # To choose the same set of color
@@ -174,6 +198,8 @@ if __name__ == "__main__":
     paths_num_topics = [(config.TRAIN_PARAMETERS[section][5].replace(config.TOPIC_EXTENSION, config.DOCS_EXTENSION), config.TRAIN_PARAMETERS[section][0]) for section in sections_to_analyze]
     if not os.path.exists(config.DATA_TSNE_FOLDER):
         os.makedirs(config.DATA_TSNE_FOLDER)
+    if not os.path.exists(config.DATA_TSNE_COMPANY_FOLDER):
+        os.makedirs(config.DATA_TSNE_COMPANY_FOLDER)
 
     embeddings = get_embeddings(paths_num_topics)
     embeddings = combine_embeddings(embeddings)
@@ -204,3 +230,13 @@ if __name__ == "__main__":
             year, reduced_tsne_lda, reduced_docs, reduced_vals, reduced_five_highest_topics, reduced_colors, reduced_color_keys, reduced_year_values, reduced_company_names = t
             plot(reduced_tsne_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (year {})'.format(year), reduced_colors, reduced_color_keys, filename + '_{}'.format(year))
 
+        # Plot for each comanies and all years
+        for t in get_vals_per_company(tsne_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
+            company_id, reduced_tsne_lda, reduced_docs, reduced_vals, reduced_five_highest_topics, reduced_colors, reduced_color_keys, reduced_year_values, reduced_company_names = t
+
+            folder_company = os.path.join(config.DATA_TSNE_COMPANY_FOLDER, str(company_id))
+            if not os.path.exists(folder_company):
+                os.makedirs(folder_company)
+            filename_company = os.path.join(folder_company, filename[filename.rfind('/')+1:] + '_{}'.format(company_id))
+
+            plot(reduced_tsne_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (company {})'.format('__|__'.join(reduced_company_names)), reduced_colors, reduced_color_keys, filename_company)
