@@ -2,7 +2,9 @@ import pickle
 import numpy as np
 import random
 import os
+import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 from itertools import combinations
 from operator import itemgetter
 import datetime
@@ -12,7 +14,7 @@ from bokeh.plotting import save
 from bokeh.models import HoverTool
 config = __import__('0_config')
 
-PLOT_EVERYTHING = True
+PLOT_TOPIC_EMBEDDINGS = False
 
 
 def extract_section(section):
@@ -85,6 +87,20 @@ def train_or_load_tsne(tsne_filepath, vals, seed=config.SEED):
     return tsne_lda
 
 
+def train_or_load_pca(pca_filepath, vals, seed=config.SEED):
+    pca_lda = None
+    if os.path.exists(pca_filepath):
+        with open(pca_filepath, 'rb') as fp:
+            pca_lda = pickle.load(fp)
+    else:
+        pca_model = PCA(n_components=2, svd_solver='auto', random_state=seed)
+        pca_lda = pca_model.fit_transform(vals)
+        with open(pca_filepath, 'wb') as fp:
+            pickle.dump(pca_lda, fp)
+
+    return pca_lda
+
+
 def get_five_highest_topics(vals):
     five_highest_topics = []
     for embs in vals:
@@ -122,18 +138,66 @@ def get_company_names(docs):
     return company_names
 
 
-def plot(tsne_lda, docs, company_names, five_highest_topics, year_values, nb_samples, title, colors, color_keys, filename):
+def get_vals_per_year(proj_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
+    year_indices = {}
+    for i, d in enumerate(docs):
+        year = utils.year_annual_report_comparator(int(d.split('-')[-2]))
+        if year not in year_indices:
+            year_indices[year] = []
+
+        year_indices[year].append(i)
+    assert sum([len(x) for x in year_indices.values()]) == len(docs)
+
+    for year, indices in year_indices.items():
+        yield year, \
+              np.take(proj_lda, indices, axis=0), \
+              itemgetter(*indices)(docs), \
+              itemgetter(*indices)(vals), \
+              [five_highest_topics[i] for i in indices], \
+              colors, \
+              (list(itemgetter(*indices)(color_keys)) if len(indices) > 1 else [itemgetter(*indices)(color_keys)]), \
+              [year_values[i] for i in indices], \
+              [company_names[i] for i in indices]
+
+
+def get_vals_per_company(proj_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
+    company_indices = {}
+    for i, d in enumerate(docs):
+        company_id = int(d.split('_')[0])
+        if company_id not in company_indices:
+            company_indices[company_id] = []
+
+        company_indices[company_id].append(i)
+    assert sum([len(x) for x in company_indices.values()]) == len(docs)
+
+    for company_id, indices in company_indices.items():
+        yield company_id, \
+              np.take(proj_lda, indices, axis=0), \
+              itemgetter(*indices)(docs), \
+              itemgetter(*indices)(vals), \
+              [five_highest_topics[i] for i in indices], \
+              colors, \
+              (list(itemgetter(*indices)(color_keys)) if len(indices) > 1 else [itemgetter(*indices)(color_keys)]), \
+              [year_values[i] for i in indices], \
+              [company_names[i] for i in indices]
+
+
+def compute_pair_wise_distance(X, metric='euclidean'):
+    return pdist(X, metric)
+
+
+def plot(proj_lda, docs, company_names, five_highest_topics, year_values, nb_samples, title, colors, color_keys, filename):
     # Plot
     plot_lda = bp.figure(plot_width=1820, plot_height=950,
                          title=title + ' ({} sample{})'.format(nb_samples, 's' if nb_samples > 1 else ''),
                          tools="pan,wheel_zoom,box_zoom,reset,hover,previewsave",
                          x_axis_type=None, y_axis_type=None, min_border=1)
 
-    plot_lda.scatter(x=tsne_lda[:nb_samples, 0], y=tsne_lda[:nb_samples, 1],
+    plot_lda.scatter(x=proj_lda[:nb_samples, 0], y=proj_lda[:nb_samples, 1],
                      color=colors[color_keys][:nb_samples],
                      source=bp.ColumnDataSource({
-                         "X":tsne_lda[:nb_samples, 0],
-                         "Y":tsne_lda[:nb_samples, 1],
+                         "X":proj_lda[:nb_samples, 0],
+                         "Y":proj_lda[:nb_samples, 1],
                          "5_highest_topics": five_highest_topics[:nb_samples] if nb_samples > 1 else [five_highest_topics[:nb_samples]],
                          "year": year_values[:nb_samples] if nb_samples > 1 else [year_values[:nb_samples]],
                          "file": docs[:nb_samples] if nb_samples > 1 else [docs[:nb_samples]],
@@ -149,50 +213,6 @@ def plot(tsne_lda, docs, company_names, five_highest_topics, year_values, nb_sam
     save(plot_lda, '{}.html'.format(filename))
 
 
-def get_vals_per_year(tsne_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
-    year_indices = {}
-    for i, d in enumerate(docs):
-        year = utils.year_annual_report_comparator(int(d.split('-')[-2]))
-        if year not in year_indices:
-            year_indices[year] = []
-
-        year_indices[year].append(i)
-    assert sum([len(x) for x in year_indices.values()]) == len(docs)
-
-    for year, indices in year_indices.items():
-        yield year, \
-              np.take(tsne_lda, indices, axis=0), \
-              itemgetter(*indices)(docs), \
-              itemgetter(*indices)(vals), \
-              [five_highest_topics[i] for i in indices], \
-              colors, \
-              (list(itemgetter(*indices)(color_keys)) if len(indices) > 1 else [itemgetter(*indices)(color_keys)]), \
-              [year_values[i] for i in indices], \
-              [company_names[i] for i in indices]
-
-
-def get_vals_per_company(tsne_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
-    company_indices = {}
-    for i, d in enumerate(docs):
-        company_id = int(d.split('_')[0])
-        if company_id not in company_indices:
-            company_indices[company_id] = []
-
-        company_indices[company_id].append(i)
-    assert sum([len(x) for x in company_indices.values()]) == len(docs)
-
-    for company_id, indices in company_indices.items():
-        yield company_id, \
-              np.take(tsne_lda, indices, axis=0), \
-              itemgetter(*indices)(docs), \
-              itemgetter(*indices)(vals), \
-              [five_highest_topics[i] for i in indices], \
-              colors, \
-              (list(itemgetter(*indices)(color_keys)) if len(indices) > 1 else [itemgetter(*indices)(color_keys)]), \
-              [year_values[i] for i in indices], \
-              [company_names[i] for i in indices]
-
-
 if __name__ == "__main__":
     # logging.getLogger().setLevel(logging.INFO)
     np.random.seed(config.SEED) # To choose the same set of color
@@ -204,6 +224,10 @@ if __name__ == "__main__":
         os.makedirs(config.DATA_TSNE_FOLDER)
     if not os.path.exists(config.DATA_TSNE_COMPANY_FOLDER):
         os.makedirs(config.DATA_TSNE_COMPANY_FOLDER)
+    if not os.path.exists(config.DATA_PCA_FOLDER):
+        os.makedirs(config.DATA_PCA_FOLDER)
+    if not os.path.exists(config.DATA_PCA_COMPANY_FOLDER):
+        os.makedirs(config.DATA_PCA_COMPANY_FOLDER)
 
     embeddings = get_embeddings(paths_num_topics)
     embeddings = combine_embeddings(embeddings)
@@ -213,37 +237,45 @@ if __name__ == "__main__":
         docs, vals = embeddings_matrices[section]
         nb_samples = len(docs)
 
-        filename = os.path.join(config.DATA_TSNE_FOLDER, section)
+        filename_tsne = os.path.join(config.DATA_TSNE_FOLDER, section)
         # Pickle cannot dump/load such filepath
-        if len(filename) > 150:
-            filename = filename[:150]
+        if len(filename_tsne) > 150:
+            filename_tsne = filename_tsne[:150]
+        filename_pca = os.path.join(config.DATA_PCA_FOLDER, section)
+        # Pickle cannot dump/load such filepath
+        if len(filename_pca) > 150:
+            filename_pca = filename_pca[:150]
 
-        tsne_lda = train_or_load_tsne(filename + '.pkl', vals)
+        # WARNING: t-SNE does not preserve distances nor density
+        tsne_lda = train_or_load_tsne(filename_tsne + '.pkl', vals)
+        pca_lda = train_or_load_pca(filename_pca + '.pkl', vals)
 
-        # Generate info for the plot
-        five_highest_topics = get_five_highest_topics(vals)
-        colors, color_keys = get_colors(docs)
-        year_values = get_year_values(color_keys, nb_samples)
-        company_names = get_company_names(docs)
+        for proj_lda, filename in [(tsne_lda, filename_tsne), (pca_lda, filename_pca)]:
+            if 'pca' in filename:
+                exit(-1)
+            # Generate info for the plot
+            five_highest_topics = get_five_highest_topics(vals)
+            colors, color_keys = get_colors(docs)
+            year_values = get_year_values(color_keys, nb_samples)
+            company_names = get_company_names(docs)
 
-        if PLOT_EVERYTHING:
             # Global plot for all companies & all years
-            plot(tsne_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section + ' (all years)', colors, color_keys, filename)
+            if PLOT_TOPIC_EMBEDDINGS:
+                plot(proj_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section + ' (all years)', colors, color_keys, filename)
+            # Global plot for all companies per year
+            for t in get_vals_per_year(proj_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
+                year, reduced_proj_lda, reduced_docs, reduced_vals, reduced_five_highest_topics, reduced_colors, reduced_color_keys, reduced_year_values, reduced_company_names = t
+                if PLOT_TOPIC_EMBEDDINGS:
+                    plot(reduced_proj_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (year {})'.format(year), reduced_colors, reduced_color_keys, filename + '_{}'.format(year))
 
-        # Global plot for all companies per year
-        for t in get_vals_per_year(tsne_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
-            year, reduced_tsne_lda, reduced_docs, reduced_vals, reduced_five_highest_topics, reduced_colors, reduced_color_keys, reduced_year_values, reduced_company_names = t
-            if PLOT_EVERYTHING:
-                plot(reduced_tsne_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (year {})'.format(year), reduced_colors, reduced_color_keys, filename + '_{}'.format(year))
+            # Plot for each comanies and all years
+            for t in get_vals_per_company(proj_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
+                company_id, reduced_proj_lda, reduced_docs, reduced_vals, reduced_five_highest_topics, reduced_colors, reduced_color_keys, reduced_year_values, reduced_company_names = t
 
-        # Plot for each comanies and all years
-        for t in get_vals_per_company(tsne_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
-            company_id, reduced_tsne_lda, reduced_docs, reduced_vals, reduced_five_highest_topics, reduced_colors, reduced_color_keys, reduced_year_values, reduced_company_names = t
+                folder_company = os.path.join(config.DATA_TSNE_COMPANY_FOLDER, str(company_id))
+                if not os.path.exists(folder_company):
+                    os.makedirs(folder_company)
+                filename_company = os.path.join(folder_company, filename[filename.rfind('/')+1:] + '_{}'.format(company_id))
 
-            folder_company = os.path.join(config.DATA_TSNE_COMPANY_FOLDER, str(company_id))
-            if not os.path.exists(folder_company):
-                os.makedirs(folder_company)
-            filename_company = os.path.join(folder_company, filename[filename.rfind('/')+1:] + '_{}'.format(company_id))
-
-            if PLOT_EVERYTHING:
-                plot(reduced_tsne_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (company {})'.format('__|__'.join(reduced_company_names)), reduced_colors, reduced_color_keys, filename_company)
+                if PLOT_TOPIC_EMBEDDINGS:
+                    plot(reduced_proj_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (company {})'.format('__|__'.join(reduced_company_names)), reduced_colors, reduced_color_keys, filename_company)
