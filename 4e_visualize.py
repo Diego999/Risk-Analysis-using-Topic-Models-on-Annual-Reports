@@ -4,6 +4,7 @@ import random
 import os
 from sklearn.manifold import TSNE
 from itertools import combinations
+from operator import itemgetter
 import datetime
 import utils
 import bokeh.plotting as bp
@@ -112,11 +113,12 @@ def get_company_names(docs):
     company_names = [os.path.join(config.DATA_AR_FOLDER, os.path.join(d.split('_')[0]), config.NAME_FILE_PER_CIK) for d in docs]
     for i, n in enumerate(company_names):
         company_names[i] = ' | '.join([l.strip() for l in fp if len(l.strip()) > 0])
-        
+
+
     return company_names
 
 
-def plot(tsne_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section, colors, color_keys):
+def plot(tsne_lda, docs, company_names, five_highest_topics, year_values, nb_samples, title, colors, color_keys, filename):
     # Plot
     plot_lda = bp.figure(plot_width=1820, plot_height=950,
                          title=section + ' ({} samples)'.format(nb_samples),
@@ -126,10 +128,10 @@ def plot(tsne_lda, docs, company_names, five_highest_topics, year_values, nb_sam
     plot_lda.scatter(x=tsne_lda[:nb_samples, 0], y=tsne_lda[:nb_samples, 1],
                      color=colors[color_keys][:nb_samples],
                      source=bp.ColumnDataSource({
-                         "5_highest_topics": five_highest_topics[:nb_samples],
-                         "year": year_values[:nb_samples],
-                         "file": docs[:nb_samples],
-                         "company": company_names[:nb_samples]
+                         "5_highest_topics": five_highest_topics[:nb_samples] if nb_samples > 1 else [five_highest_topics[:nb_samples]],
+                         "year": year_values[:nb_samples] if nb_samples > 1 else [year_values[:nb_samples]],
+                         "file": docs[:nb_samples] if nb_samples > 1 else [docs[:nb_samples]],
+                         "company": company_names[:nb_samples] if nb_samples > 1 else [company_names[:nb_samples]]
                      })
                      )
 
@@ -139,6 +141,28 @@ def plot(tsne_lda, docs, company_names, five_highest_topics, year_values, nb_sam
                       "Company": "@company"}
 
     save(plot_lda, '{}.html'.format(filename))
+
+
+def get_vals_per_year(tsne_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
+    year_indices = {}
+    for i, d in enumerate(docs):
+        year = utils.year_annual_report_comparator(int(d.split('-')[-2]))
+        if year not in year_indices:
+            year_indices[year] = []
+
+        year_indices[year].append(i)
+    assert sum([len(x) for x in year_indices.values()]) == len(docs)
+
+    for year, indices in year_indices.items():
+        yield year, \
+              np.take(tsne_lda, indices, axis=0), \
+              itemgetter(*indices)(docs), \
+              itemgetter(*indices)(vals), \
+              [five_highest_topics[i] for i in indices], \
+              colors, \
+              (list(itemgetter(*indices)(color_keys)) if len(indices) > 1 else [itemgetter(*indices)(color_keys)]), \
+              [year_values[i] for i in indices], \
+              [company_names[i] for i in indices]
 
 
 if __name__ == "__main__":
@@ -172,5 +196,11 @@ if __name__ == "__main__":
         year_values = get_year_values(color_keys, nb_samples)
         company_names = get_company_names(docs)
 
-        plot(tsne_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section, colors, color_keys)
+        # Global plot for all companies & all years
+        plot(tsne_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section + ' (all years)', colors, color_keys, filename)
+
+        # Global plot for all companies per year
+        for t in get_vals_per_year(tsne_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
+            year, reduced_tsne_lda, reduced_docs, reduced_vals, reduced_five_highest_topics, reduced_colors, reduced_color_keys, reduced_year_values, reduced_company_names = t
+            plot(reduced_tsne_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (year {})'.format(year), reduced_colors, reduced_color_keys, filename + '_{}'.format(year))
 
