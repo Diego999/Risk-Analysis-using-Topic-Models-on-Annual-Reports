@@ -314,4 +314,4 @@ if __name__ == "__main__":
                 if PLOT_TOPIC_EMBEDDINGS:
                     plot(reduced_proj_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (company {})'.format('__|__'.join(reduced_company_names)), reduced_colors, reduced_color_keys, filename_company)
                 if PLOT_DISTANCE:
-                    plot_dist(reduced_proj_lda, filename + '_{}'.format(company_id))
+                    plot_dist(reduced_proj_lda, filename_company + '_{}'.format(company_id))
