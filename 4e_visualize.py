@@ -3,6 +3,8 @@ import numpy as np
 from scipy.spatial.distance import pdist
 import random
 import os
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE, MDS, LocallyLinearEmbedding
 from sklearn.decomposition import PCA
