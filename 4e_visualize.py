@@ -315,10 +315,10 @@ if __name__ == "__main__":
     embeddings = combine_embeddings(embeddings)
     embeddings_matrices = convert_to_matrices(embeddings)
 
-    for folder_filename, folder_company, proj_func in [#(config.DATA_TSNE_FOLDER, config.DATA_TSNE_COMPANY_FOLDER, train_or_load_tsne),
-                                                       (config.DATA_PCA_FOLDER, config.DATA_PCA_COMPANY_FOLDER, train_or_load_pca),
-                                                       ]:#(config.DATA_LTSA_FOLDER, config.DATA_LTSA_COMPANY_FOLDER, train_or_load_ltsa),
-                                                       #(config.DATA_MDS_FOLDER, config.DATA_MDS_COMPANY_FOLDER, train_or_load_mds)]:
+    for folder_filename, folder_company, proj_func in [(config.DATA_PCA_FOLDER, config.DATA_PCA_COMPANY_FOLDER, train_or_load_pca),
+                                                       (config.DATA_TSNE_FOLDER, config.DATA_TSNE_COMPANY_FOLDER, train_or_load_tsne),
+                                                       (config.DATA_LTSA_FOLDER, config.DATA_LTSA_COMPANY_FOLDER, train_or_load_ltsa),
+                                                       (config.DATA_MDS_FOLDER, config.DATA_MDS_COMPANY_FOLDER, train_or_load_mds)]:
         for section in sorted(list(embeddings_matrices.keys()), key=lambda x:len(x)):
             print('Computing Method: ' + folder_filename[folder_filename.rfind('/') + 1:])
             print('Computing Section: ' + section)
