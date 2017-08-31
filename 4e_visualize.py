@@ -344,7 +344,7 @@ if __name__ == "__main__":
             if PLOT_TOPIC_EMBEDDINGS:
                 plot(proj_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section + ' (all years)', colors, color_keys, filename + '_all_years', vals.shape[1])
             if PLOT_DISTANCE:
-                plot_dist(proj_lda, filename + '_(all_years)_dist')
+                plot_dist(proj_lda, filename + '_all_years_dist')
 
             print('Global plots per companies per year')
             # Global plot for all companies per year
