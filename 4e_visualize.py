@@ -10,6 +10,7 @@ from sklearn.manifold import TSNE, MDS, LocallyLinearEmbedding
 from sklearn.decomposition import PCA
 from itertools import combinations
 from operator import itemgetter
+from multiprocessing import Process
 import datetime
 import utils
 import warnings
@@ -284,6 +285,20 @@ def plot_dist(proj_lda, filename, title='Hist. Euclidian distance annual reports
     plt.gcf().clear()
 
 
+def company_process(tuples, global_folder_company, filename, PLOT_TOPIC_EMBEDDINGS, PLOT_DISTANCE, nb_topics):
+    for t in tuples:
+        company_id, reduced_proj_lda, reduced_docs, reduced_vals, reduced_five_highest_topics, reduced_colors, reduced_color_keys, reduced_year_values, reduced_company_names = t
+        folder_company = os.path.join(global_folder_company, str(company_id))
+        if not os.path.exists(folder_company):
+            os.makedirs(folder_company)
+        filename_company = os.path.join(folder_company, filename[filename.rfind('/') + 1:] + '_{}'.format(company_id))
+
+        if PLOT_TOPIC_EMBEDDINGS:
+            plot(reduced_proj_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (company {})'.format('__|__'.join(reduced_company_names)), reduced_colors, reduced_color_keys, filename_company, nb_topics)
+        if PLOT_DISTANCE:
+            plot_dist(reduced_proj_lda, filename_company + '_{}_dist'.format(company_id))
+
+
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
     # logging.getLogger().setLevel(logging.INFO)
@@ -300,7 +315,10 @@ if __name__ == "__main__":
     embeddings = combine_embeddings(embeddings)
     embeddings_matrices = convert_to_matrices(embeddings)
 
-    for folder_filename, proj_func in [(config.DATA_TSNE_FOLDER, train_or_load_tsne), (config.DATA_PCA_FOLDER, train_or_load_pca), (config.DATA_LTSA_FOLDER, train_or_load_ltsa), (config.DATA_MDS_FOLDER, train_or_load_mds)]:
+    for folder_filename, folder_company, proj_func in [#(config.DATA_TSNE_FOLDER, config.DATA_TSNE_COMPANY_FOLDER, train_or_load_tsne),
+                                                       (config.DATA_PCA_FOLDER, config.DATA_PCA_COMPANY_FOLDER, train_or_load_pca),
+                                                       ]:#(config.DATA_LTSA_FOLDER, config.DATA_LTSA_COMPANY_FOLDER, train_or_load_ltsa),
+                                                       #(config.DATA_MDS_FOLDER, config.DATA_MDS_COMPANY_FOLDER, train_or_load_mds)]:
         for section in sorted(list(embeddings_matrices.keys()), key=lambda x:len(x)):
             print('Computing Method: ' + folder_filename[folder_filename.rfind('/') + 1:])
             print('Computing Section: ' + section)
@@ -321,30 +339,32 @@ if __name__ == "__main__":
             year_values = get_year_values(color_keys, nb_samples)
             company_names = get_company_names(docs)
 
+            print('Global plots')
             # Global plot for all companies & all years
             if PLOT_TOPIC_EMBEDDINGS:
-                plot(proj_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section + ' (all years)', colors, color_keys, filename + '_all_years')
+                plot(proj_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section + ' (all years)', colors, color_keys, filename + '_all_years', vals.shape[1])
             if PLOT_DISTANCE:
                 plot_dist(proj_lda, filename + '_(all_years)_dist')
 
+            print('Global plots per companies per year')
             # Global plot for all companies per year
             for t in get_vals_per_year(proj_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
                 year, reduced_proj_lda, reduced_docs, reduced_vals, reduced_five_highest_topics, reduced_colors, reduced_color_keys, reduced_year_values, reduced_company_names = t
                 if PLOT_TOPIC_EMBEDDINGS:
-                    plot(reduced_proj_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (year {})'.format(year), reduced_colors, reduced_color_keys, filename + '_{}'.format(year))
+                    plot(reduced_proj_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (year {})'.format(year), reduced_colors, reduced_color_keys, filename + '_{}'.format(year), vals.shape[1])
                 if PLOT_DISTANCE:
                     plot_dist(reduced_proj_lda, filename + '_{}_dist'.format(year))
 
-            # Plot for each comanies and all years
-            for t in get_vals_per_company(proj_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
-                company_id, reduced_proj_lda, reduced_docs, reduced_vals, reduced_five_highest_topics, reduced_colors, reduced_color_keys, reduced_year_values, reduced_company_names = t
+            print('Plot per company')
+            # Plot for each company and all years
+            tuples = [t for t in get_vals_per_company(proj_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names)]
+            tuples = utils.chunks(tuples, int(len(tuples) / config.NUM_CORES))
 
-                folder_company = os.path.join(config.DATA_TSNE_COMPANY_FOLDER, str(company_id))
-                if not os.path.exists(folder_company):
-                    os.makedirs(folder_company)
-                filename_company = os.path.join(folder_company, filename[filename.rfind('/')+1:] + '_{}'.format(company_id))
+            procs = []
+            for i in range(config.NUM_CORES):
+                procs.append(Process(target=company_process, args=(tuples[i], folder_company, filename, PLOT_TOPIC_EMBEDDINGS, PLOT_DISTANCE, vals.shape[1])))
+                procs[-1].start()
+            for p in procs:
+                p.join()
 
-                if PLOT_TOPIC_EMBEDDINGS:
-                    plot(reduced_proj_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (company {})'.format('__|__'.join(reduced_company_names)), reduced_colors, reduced_color_keys, filename_company)
-                if PLOT_DISTANCE:
-                    plot_dist(reduced_proj_lda, filename_company + '_{}_dist'.format(company_id))
+            print('')
