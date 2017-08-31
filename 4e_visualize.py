@@ -292,9 +292,9 @@ if __name__ == "__main__":
 
             # Global plot for all companies & all years
             if PLOT_TOPIC_EMBEDDINGS:
-                plot(proj_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section + ' (all years)', colors, color_keys, filename)
+                plot(proj_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section + ' (all_years)', colors, color_keys, filename)
             if PLOT_DISTANCE:
-                plot_dist(proj_lda, filename + '_global')
+                plot_dist(proj_lda, filename + '_(all_years)_dist')
 
             # Global plot for all companies per year
             for t in get_vals_per_year(proj_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
@@ -302,7 +302,7 @@ if __name__ == "__main__":
                 if PLOT_TOPIC_EMBEDDINGS:
                     plot(reduced_proj_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (year {})'.format(year), reduced_colors, reduced_color_keys, filename + '_{}'.format(year))
                 if PLOT_DISTANCE:
-                    plot_dist(reduced_proj_lda, filename + '_{}'.format(year))
+                    plot_dist(reduced_proj_lda, filename + '_{}_dist'.format(year))
 
             # Plot for each comanies and all years
             for t in get_vals_per_company(proj_lda, docs, vals, five_highest_topics, colors, color_keys, year_values, company_names):
@@ -316,4 +316,4 @@ if __name__ == "__main__":
                 if PLOT_TOPIC_EMBEDDINGS:
                     plot(reduced_proj_lda, reduced_docs, reduced_company_names, reduced_five_highest_topics, reduced_year_values, len(reduced_color_keys), section + ' (company {})'.format('__|__'.join(reduced_company_names)), reduced_colors, reduced_color_keys, filename_company)
                 if PLOT_DISTANCE:
-                    plot_dist(reduced_proj_lda, filename_company + '_{}'.format(company_id))
+                    plot_dist(reduced_proj_lda, filename_company + '_{}_dist'.format(company_id))
