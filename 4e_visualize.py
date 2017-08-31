@@ -12,6 +12,7 @@ from itertools import combinations
 from operator import itemgetter
 import datetime
 import utils
+import warnings
 import bokeh.plotting as bp
 from bokeh.plotting import save
 from bokeh.models import HoverTool
@@ -256,6 +257,7 @@ def plot_dist(proj_lda, filename, title='Hist. Euclidian distance annual reports
 
 
 if __name__ == "__main__":
+    warnings.filterwarnings("ignore")
     # logging.getLogger().setLevel(logging.INFO)
     np.random.seed(config.SEED) # To choose the same set of color
     random.seed(config.SEED)
