@@ -245,10 +245,10 @@ def compute_pair_wise_distance(X, metric='euclidean'):
     return pdist(X, metric)
 
 
-def plot(proj_lda, docs, company_names, five_highest_topics, year_values, nb_samples, title, colors, color_keys, filename):
+def plot(proj_lda, docs, company_names, five_highest_topics, year_values, nb_samples, title, colors, color_keys, filename, nb_topics):
     # Plot
     plot_lda = bp.figure(plot_width=1820, plot_height=950,
-                         title=title + ' ({} sample{})'.format(nb_samples, 's' if nb_samples > 1 else ''),
+                         title=title + ' ({} sample{}, {} topics)'.format(nb_samples, 's' if nb_samples > 1 else '', nb_topics),
                          tools="pan,wheel_zoom,box_zoom,reset,hover,previewsave",
                          x_axis_type=None, y_axis_type=None, min_border=1)
 
