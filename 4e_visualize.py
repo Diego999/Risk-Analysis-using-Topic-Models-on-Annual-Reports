@@ -18,7 +18,7 @@ from bokeh.models import HoverTool
 config = __import__('0_config')
 
 PLOT_TOPIC_EMBEDDINGS = True
-PLOT_DISTANCE = True
+PLOT_DISTANCE = False
 
 
 def extract_section(section):
@@ -270,19 +270,19 @@ if __name__ == "__main__":
     embeddings = combine_embeddings(embeddings)
     embeddings_matrices = convert_to_matrices(embeddings)
 
-    for section in sorted(list(embeddings_matrices.keys()), key=lambda x:len(x)):
-        print('Computing Section: ' + section)
-        docs, vals = embeddings_matrices[section]
-        nb_samples = len(docs)
+    for folder_filename, proj_func in [(config.DATA_TSNE_FOLDER, train_or_load_tsne), (config.DATA_PCA_FOLDER, train_or_load_pca), (config.DATA_LTSA_FOLDER, train_or_load_ltsa), (config.DATA_MDS_FOLDER, train_or_load_mds)]:
+        for section in sorted(list(embeddings_matrices.keys()), key=lambda x:len(x)):
+            print('Computing Method: ' + folder_filename[folder_filename.rfind('/') + 1:])
+            print('Computing Section: ' + section)
+            docs, vals = embeddings_matrices[section]
+            nb_samples = len(docs)
 
-        # WARNING: t-SNE does not preserve distances nor density
-        for folder_filename, proj_func in [(config.DATA_TSNE_FOLDER, train_or_load_tsne), (config.DATA_PCA_FOLDER, train_or_load_pca), (config.DATA_MDS_FOLDER, train_or_load_mds), (config.DATA_LTSA_FOLDER, train_or_load_ltsa)]:
-            print('Computing Method: ' + folder_filename[folder_filename.rfind('/')+1:])
             filename = os.path.join(folder_filename, section)
             # Pickle cannot dump/load such filepath
             if len(filename) > 150:
                 filename = filename[:150]
 
+            # WARNING: t-SNE does not preserve distances nor density
             proj_lda = proj_func(filename + '.pkl', vals)
             # Generate info for the plot
             five_highest_topics = get_five_highest_topics(vals)
@@ -292,7 +292,7 @@ if __name__ == "__main__":
 
             # Global plot for all companies & all years
             if PLOT_TOPIC_EMBEDDINGS:
-                plot(proj_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section + ' (all_years)', colors, color_keys, filename)
+                plot(proj_lda, docs, company_names, five_highest_topics, year_values, nb_samples, section + ' (all years)', colors, color_keys, filename + '_all_years')
             if PLOT_DISTANCE:
                 plot_dist(proj_lda, filename + '_(all_years)_dist')
 
