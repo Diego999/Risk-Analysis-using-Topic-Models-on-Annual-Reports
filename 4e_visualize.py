@@ -78,60 +78,88 @@ def convert_to_matrices(embeddings):
     return embeddings_matrices
 
 
+# From Scikit: t-SNE will focus on the local structure of the data and will tend to extract clustered local groups of samples
+# This allows t-SNE to be particularly sensitive to local structure and has a few other advantages over existing techniques:
+# - Revealing the structure at many scales on a single map
+# - Revealing data that lie in multiple, different, manifolds or clusters
+# - Reducing the tendency to crowd points together at the center
 def train_or_load_tsne(tsne_filepath, vals, seed=config.SEED):
     tsne_lda = None
+    tsne_model = None
     if os.path.exists(tsne_filepath):
         with open(tsne_filepath, 'rb') as fp:
             tsne_lda = pickle.load(fp)
+        with open(tsne_filepath + '_model', 'rb') as fp:
+            tsne_model = pickle.load(fp)
     else:
         tsne_model = TSNE(n_components=2, perplexity=30.0, early_exaggeration=12.0, learning_rate=50.0, n_iter=5000, n_iter_without_progress=300, min_grad_norm=1e-7, verbose=1, random_state=seed, angle=.4, init='pca')
         tsne_lda = tsne_model.fit_transform(vals)
+        with open(tsne_filepath + '_model', 'wb') as fp:
+            pickle.dump(tsne_model, fp)
         with open(tsne_filepath, 'wb') as fp:
             pickle.dump(tsne_lda, fp)
 
-    return tsne_lda
+    return tsne_model, tsne_lda
 
 
 def train_or_load_pca(pca_filepath, vals, seed=config.SEED):
     pca_lda = None
+    pca_model = None
     if os.path.exists(pca_filepath):
         with open(pca_filepath, 'rb') as fp:
             pca_lda = pickle.load(fp)
+        with open(pca_filepath + '_model', 'rb') as fp:
+            pca_model = pickle.load(fp)
     else:
         pca_model = PCA(n_components=2, svd_solver='auto', random_state=seed)
         pca_lda = pca_model.fit_transform(vals)
+        with open(pca_filepath + '_model', 'wb') as fp:
+            pickle.dump(pca_model, fp)
         with open(pca_filepath, 'wb') as fp:
             pickle.dump(pca_lda, fp)
 
-    return pca_lda
+    return pca_model, pca_lda
 
 
+# From Scikit: MDS attempts to model similarity or dissimilarity data as distances in a geometric spaces
 def train_or_load_mds(mds_filepath, vals, seed=config.SEED):
     mds_lda = None
+    mds_model = None
     if os.path.exists(mds_filepath):
         with open(mds_filepath, 'rb') as fp:
             mds_lda = pickle.load(fp)
+        with open(mds_filepath + '_model', 'rb') as fp:
+            mds_model = pickle.load(fp)
     else:
-        mds_model = MDS(n_components=2, max_iter=5000, verbose=1, n_jobs=config.NUM_CORES, dissimilarity='euclidean', random_state=seed)
+        mds_model = MDS(n_components=2, max_iter=5000, n_init=config.NUM_CORES, verbose=1, n_jobs=config.NUM_CORES, dissimilarity='euclidean', random_state=seed)
         mds_lda = mds_model.fit_transform(vals)
+        with open(mds_filepath + '_model', 'wb') as fp:
+            pickle.dump(mds_model, fp)
         with open(mds_filepath, 'wb') as fp:
             pickle.dump(mds_lda, fp)
 
-    return mds_lda
+    return mds_model, mds_lda
 
 
+# From Scikit: Rather than focusing on preserving neighborhood distances as in LLE,
+# LTSA seeks to characterize the local geometry at each neighborhood via its tangent space, and performs a global optimization to align these local tangent spaces to learn the embedding
 def train_or_load_ltsa(ltsa_filepath, vals, seed=config.SEED):
     ltsa_lda = None
+    ltsa_model = None
     if os.path.exists(ltsa_filepath):
         with open(ltsa_filepath, 'rb') as fp:
             ltsa_lda = pickle.load(fp)
+        with open(ltsa_filepath + '_model', 'rb') as fp:
+            ltsa_model = pickle.load(fp)
     else:
         ltsa_model = LocallyLinearEmbedding(n_components=2, n_neighbors=35, max_iter=5000, method='modified', n_jobs=config.NUM_CORES, eigen_solver='auto', random_state=seed)
         ltsa_lda = ltsa_model.fit_transform(vals)
+        with open(ltsa_filepath + '_model', 'wb') as fp:
+            pickle.dump(ltsa_model, fp)
         with open(ltsa_filepath, 'wb') as fp:
             pickle.dump(ltsa_lda, fp)
 
-    return ltsa_lda
+    return ltsa_model, ltsa_lda
 
 
 def get_five_highest_topics(vals):
@@ -285,7 +313,8 @@ if __name__ == "__main__":
                 filename = filename[:150]
 
             # WARNING: t-SNE does not preserve distances nor density
-            proj_lda = proj_func(filename + '.pkl', vals)
+            # PCA: Doesn't seem to explain the variance quite good: ~7% 6% 5 5 5 4 4 3 3 3 3 3 2 2 2 ...
+            model, proj_lda = proj_func(filename + '.pkl', vals)
             # Generate info for the plot
             five_highest_topics = get_five_highest_topics(vals)
             colors, color_keys = get_colors(docs)
