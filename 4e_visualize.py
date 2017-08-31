@@ -132,7 +132,7 @@ def train_or_load_mds(mds_filepath, vals, seed=config.SEED):
         with open(mds_filepath + '_model', 'rb') as fp:
             mds_model = pickle.load(fp)
     else:
-        mds_model = MDS(n_components=2, max_iter=5000, n_init=config.NUM_CORES, verbose=1, n_jobs=config.NUM_CORES, dissimilarity='euclidean', random_state=seed)
+        mds_model = MDS(n_components=2, max_iter=1000, n_init=config.NUM_CORES, verbose=1, n_jobs=config.NUM_CORES, dissimilarity='euclidean', random_state=seed)
         mds_lda = mds_model.fit_transform(vals)
         with open(mds_filepath + '_model', 'wb') as fp:
             pickle.dump(mds_model, fp)
@@ -153,7 +153,7 @@ def train_or_load_ltsa(ltsa_filepath, vals, seed=config.SEED):
         with open(ltsa_filepath + '_model', 'rb') as fp:
             ltsa_model = pickle.load(fp)
     else:
-        ltsa_model = LocallyLinearEmbedding(n_components=2, n_neighbors=35, max_iter=5000, method='modified', n_jobs=config.NUM_CORES, eigen_solver='auto', random_state=seed)
+        ltsa_model = LocallyLinearEmbedding(n_components=2, n_neighbors=5, max_iter=1000, method='modified', n_jobs=config.NUM_CORES, eigen_solver='auto', random_state=seed)
         ltsa_lda = ltsa_model.fit_transform(vals)
         with open(ltsa_filepath + '_model', 'wb') as fp:
             pickle.dump(ltsa_model, fp)
