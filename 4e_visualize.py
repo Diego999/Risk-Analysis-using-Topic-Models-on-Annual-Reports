@@ -129,13 +129,11 @@ def train_or_load_mds(mds_filepath, vals, seed=config.SEED):
     if os.path.exists(mds_filepath):
         with open(mds_filepath, 'rb') as fp:
             mds_lda = pickle.load(fp)
-        with open(mds_filepath + '_model', 'rb') as fp:
-            mds_model = pickle.load(fp)
+        # Too big to load
     else:
         mds_model = MDS(n_components=2, max_iter=300, verbose=1, n_init=4, n_jobs=4, dissimilarity='euclidean', random_state=seed)
         mds_lda = mds_model.fit_transform(vals)
-        with open(mds_filepath + '_model', 'wb') as fp:
-            pickle.dump(mds_model, fp)
+        #Too big to save the model
         with open(mds_filepath, 'wb') as fp:
             pickle.dump(mds_lda, fp)
 
