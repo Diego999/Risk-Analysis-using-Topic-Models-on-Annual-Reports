@@ -330,6 +330,7 @@ if __name__ == "__main__":
             if len(filename) > 150:
                 filename = filename[:150]
 
+            print('Load file: ' + filename + '.pkl(_model)')
             # WARNING: t-SNE does not preserve distances nor density
             # PCA: Doesn't seem to explain the variance quite good: ~7% 6% 5 5 5 4 4 3 3 3 3 3 2 2 2 ...
             model, proj_lda = proj_func(filename + '.pkl', vals)
