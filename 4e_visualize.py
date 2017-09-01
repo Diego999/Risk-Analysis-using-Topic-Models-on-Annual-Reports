@@ -46,7 +46,7 @@ def get_embeddings(paths_num_topics):
 
 
 def combine_embeddings(embeddings):
-    initial_keys = list(embeddings.keys())
+    initial_keys = sorted(list(embeddings.keys()), key=lambda x:len(x))
     for r in range(2, len(initial_keys)+1):
         for combs in combinations(initial_keys, r):
             embedding_keys = list(combs) # Assure to keep the same order
