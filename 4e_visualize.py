@@ -325,10 +325,8 @@ if __name__ == "__main__":
             docs, vals = embeddings_matrices[section]
             nb_samples = len(docs)
 
-            filename = os.path.join(folder_filename, section)
-            # Pickle cannot dump/load such filepath
-            if len(filename) > 150:
-                filename = filename[:150]
+            section_short = '_'.join([k.split('_')[0] for k in section.split('|')]) if '|' in section else section.split('_')[0]å
+            filename = os.path.join(folder_filename, section_short)
 
             print('Load file: ' + filename + '.pkl(_model)')
             # WARNING: t-SNE does not preserve distances nor density
