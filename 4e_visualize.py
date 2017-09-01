@@ -325,7 +325,7 @@ if __name__ == "__main__":
             docs, vals = embeddings_matrices[section]
             nb_samples = len(docs)
 
-            section_short = '_'.join([k.split('_')[0] for k in section.split('|')]) if '|' in section else section.split('_')[0]å
+            section_short = '_'.join([k.split('_')[0] for k in section.split('|')]) if '|' in section else section.split('_')[0]
             filename = os.path.join(folder_filename, section_short)
 
             print('Load file: ' + filename + '.pkl(_model)')
