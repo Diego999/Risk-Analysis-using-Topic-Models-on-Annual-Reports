@@ -131,7 +131,7 @@ def train_or_load_mds(mds_filepath, vals, seed=config.SEED):
             mds_lda = pickle.load(fp)
         # Too big to load
     else:
-        mds_model = MDS(n_components=2, max_iter=300, verbose=1, n_init=4, n_jobs=4, dissimilarity='euclidean', random_state=seed)
+        mds_model = MDS(n_components=2, max_iter=30, verbose=3, n_init=4, n_jobs=4, dissimilarity='euclidean', random_state=seed)
         mds_lda = mds_model.fit_transform(vals)
         #Too big to save the model
         with open(mds_filepath, 'wb') as fp:
@@ -151,7 +151,7 @@ def train_or_load_ltsa(ltsa_filepath, vals, seed=config.SEED):
         with open(ltsa_filepath + '_model', 'rb') as fp:
             ltsa_model = pickle.load(fp)
     else:
-        ltsa_model = LocallyLinearEmbedding(n_components=2, n_neighbors=5, max_iter=300, method='modified', eigen_solver='dense', random_state=seed)
+        ltsa_model = LocallyLinearEmbedding(n_components=2, n_neighbors=4, max_iter=200, method='modified', eigen_solver='dense', random_state=seed)
         ltsa_lda = ltsa_model.fit_transform(vals)
         with open(ltsa_filepath + '_model', 'wb') as fp:
             pickle.dump(ltsa_model, fp)
