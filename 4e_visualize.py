@@ -20,7 +20,7 @@ from bokeh.models import HoverTool
 config = __import__('0_config')
 
 PLOT_TOPIC_EMBEDDINGS = True
-PLOT_DISTANCE = False
+PLOT_DISTANCE = True
 
 
 def extract_section(section):
