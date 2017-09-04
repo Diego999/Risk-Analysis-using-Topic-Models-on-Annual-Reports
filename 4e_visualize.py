@@ -131,7 +131,7 @@ def train_or_load_mds(mds_filepath, vals, seed=config.SEED):
             mds_lda = pickle.load(fp)
         # Too big to load
     else:
-        mds_model = MDS(n_components=2, max_iter=30, verbose=3, n_init=4, n_jobs=4, dissimilarity='euclidean', random_state=seed)
+        mds_model = MDS(n_components=2, max_iter=20, verbose=3, n_init=4, n_jobs=4, dissimilarity='euclidean', random_state=seed)
         mds_lda = mds_model.fit_transform(vals)
         #Too big to save the model
         with open(mds_filepath, 'wb') as fp:
