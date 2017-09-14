@@ -147,6 +147,16 @@ def get_lemmas(parsed_data):
     return lemmas
 
 
+def get_tokens(parsed_data):
+    assert len(parsed_data) == 1
+    parsed_data = parsed_data[0]
+
+    # Tokenize
+    tokens = [l.lower() for l in parsed_data['tokens']]
+
+    return tokens
+
+
 def preprocess_util_thread(data, storage, pid):
     annotator = stanford_corenlp_pywrapper.CoreNLP(configdict={'annotators': 'tokenize, ssplit, pos, lemma'}, corenlp_jars=[config.SF_NLP_JARS])
 

@@ -18,6 +18,7 @@ EXTENSION_CLEAN_PREPROCESSING = 'txt_clean'
 TOPIC_EXTENSION = 'topic.pkl'
 TERMS_EXTENSION = 'term.pkl'
 DOCS_EXTENSION = 'doc.pkl'
+SENT_DOCS_EXTENSION = 'sent_doc.pkl'
 
 OUTPUT_FOLDER = os.path.join('.', 'out/')
 MODEL_FOLDER = os.path.join('.', 'models/')
@@ -50,6 +51,7 @@ DATA_7A_TOPICS = os.path.join(DATA_SECTON_FOLDER, SECTION_7A + '.' + TOPIC_EXTEN
 
 SUFFIX_CLEAN_DATA = '_clean.txt'
 SUFFIX_PREPROCESSED_DATA = '_preprocessed.pkl'
+SUFFIX_PREPROCESSED_DATA_FOR_SENT = '_for_sent.pkl'
 SUFFIX_INPUT_DATA = '_input'
 DICT_LEMMA_IDX = '_dict_lemma_idx.pkl'
 DICT_IDX_LEMMA = '_dict_idx_lemma.pkl'
