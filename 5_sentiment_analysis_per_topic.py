@@ -256,8 +256,14 @@ if __name__ == "__main__":
     numpy.random.seed(config.SEED)
     random.seed(config.SEED)
 
+    master_dictionary, md_header, sentiment_categories, stopwords, total_documents = utils.load_masterdictionary(config.SENTIMENT_LEXICON, True, False, True)
+
     sections_to_analyze = [config.DATA_7A_FOLDER]
     for section in sections_to_analyze:
+        path = os.path.join(config.OUTPUT_FOLDER_SENTIMENT, section[section.rfind('/')+1:])
+        if not os.path.exists(path):
+            os.makedirs(path)
+
         data = load_and_clean_data(section)  # Override in order to keep '.' to distinguish sentences
         data, lemma_to_idx, idx_to_lemma = preprocess(section, data)
         corpus, dictionary, texts, time_slices, data = preprocessing_topic(data, idx_to_lemma)
@@ -272,4 +278,109 @@ if __name__ == "__main__":
         documents_topic_distr = utils.load_pickle(config.TRAIN_PARAMETERS[section][5].replace(config.TOPIC_EXTENSION, config.DOCS_EXTENSION))
         sentence_documents_topic_distr = get_sentence_document_topic_distribution(num_topics, data, corpus, model, config.TRAIN_PARAMETERS[section][5].replace(config.TOPIC_EXTENSION, config.SENT_DOCS_EXTENSION))
 
-        
+        # These are NOT pure sentiments
+        # Strong modal -> always, definitely, never
+        # Moderate model -> can, generally, usually
+        # Weak modal -> almost, could, might, suggests
+        # Constraining -> commit, encumber, limit
+        # Interesting -> provides useful examples of such thins as context or ambiguity
+
+        # Pure sentiments
+        # Positive
+        # Negative
+        # Litigious -> Words reflecting a propsenity for legal contest or, per their label, litigiousness (~731 words)
+        #              e.g. claimant, deposition, interlocutory, testimony, tort
+        # Uncertainties -> Words denoting uncertainty, with emphasis on the general notion of imprecision rather than exclusively focusing on risk ( ~285 words)
+        #                  e.g. approximate, contingency, depend, fluctuate, indefinite, uncertain, variability
+        # Use sentiment lexicon to extract polarity
+        sentiments = []
+        for idx, tokens_sent, lemma_sent in data:
+            words_sent = tokens_sent # Might be lemmas
+
+            sentiments_sent = []
+            for sent in words_sent:
+                sentiments_word = []
+                for w in sent:
+                    if '_' in w: # Handle n-grams
+                        w = w.split('_')
+                    else:
+                        w = [w]
+                    for ww in w:
+                        if ww in master_dictionary and not master_dictionary[ww].stopword:
+                            sentiments_word.append(master_dictionary[ww])
+                sentiments_sent.append(sentiments_word)
+            sentiments.append((idx, sentiments_sent))
+
+        # Aggregate
+        sentiments_agg = []
+        for idx, sentiments_sent in sentiments:
+            sents_agg = []
+            for sent in sentiments_sent:
+                sent_dict = {'negative':0, 'positive':0, 'uncertainty':0, 'litigious':0, 'constraining':0, 'strong_modal':0, 'weak_modal':0, 'neutral':0}
+                for w in sent:
+                    for k, v in w.sentiment.items():
+                        if v:
+                            sent_dict[k] += 1
+                sents_agg.append(sent_dict)
+            sentiments_agg.append(sents_agg)
+
+        for i, (item, tokens_sent, lemma_sent) in enumerate(data):
+            file = os.path.join(path, item[item.rfind('/')+1:])
+            if '45919_0001193125-11-053421.txt' in file:
+                a = 2
+            text = data[i][1]
+            sents = sentiments[i][1]
+            sent_agg = sentiments_agg[i]
+            topics = sentence_documents_topic_distr[i][1]
+            assert len(text) == len(sents) and len(sents) == len(sent_agg) and len(sent_agg) == len(topics)
+
+            # Find unique sentences
+            all_sentences = [' '.join(t) for t in data[i][1]]
+            all_sentences_set = set()
+            final_indices = set()
+            for j, sent in enumerate(all_sentences):
+                if sent not in all_sentences_set:
+                    all_sentences_set.add(sent)
+                    final_indices.add(j)
+
+            with open(file, 'w', encoding='utf-8') as fp:
+                fp.write('<Text by sentence>\n')
+                for j, sent in enumerate(text):
+                    fp.write(str(j) + ') ' + ' '.join(sent) + '\n')
+                fp.write('\n')
+
+                fp.write('<Top 5 Topics per sentence>\n')
+                for j, ts in enumerate(topics):
+                    fp.write(str(j) + ') ')
+                    if j in final_indices:
+                        fp.write(', '.join([str(t)+':'+str(c) for t,c in sorted(ts, key=lambda x:-float(x[1]))[:5]]) if len(corpus[i][j]) != 0 else 'Empty')
+                    else:
+                        fp.write('Duplicate')
+                    fp.write('\n')
+                fp.write('\n')
+
+                fp.write('<Sentiments per sentence>\n')
+                for j, sent in enumerate(sents):
+                    fp.write(str(j) + ') ')
+                    if j in final_indices:
+                        fp.write(', '.join([w.word +'(' + ','.join([k for k,v in w.sentiment.items() if v]) + ')' for w in sent]) + '\n')
+                    else:
+                        fp.write('Duplicate\n')
+                fp.write('\n')
+
+                fp.write('<Aggregation sentiments all sentences (with duplicata removed)>\n')
+                final_sentiments_agg = {'negative': 0, 'positive': 0, 'uncertainty': 0, 'litigious': 0, 'constraining': 0, 'strong_modal': 0, 'weak_modal': 0, 'neutral': 0}
+                for j, sent in enumerate(sent_agg):
+                    if j in final_indices:
+                        for k, v in sent.items():
+                                final_sentiments_agg[k] += v
+                fp.write(', '.join([str(k)+':'+str(v) for k,v in sorted(final_sentiments_agg.items(), key=lambda x:-x[1])]) + '\n')
+                fp.write('\n')
+
+                fp.write('<Aggregation sentiments all sentences (without duplicata removed)>\n')
+                final_sentiments_agg_dup = {'negative': 0, 'positive': 0, 'uncertainty': 0, 'litigious': 0, 'constraining': 0, 'strong_modal': 0, 'weak_modal': 0, 'neutral': 0}
+                for j, sent in enumerate(sent_agg):
+                    for k, v in sent.items():
+                        final_sentiments_agg_dup[k] += v
+                fp.write(', '.join([str(k)+':'+str(v) for k,v in sorted(final_sentiments_agg_dup.items(), key=lambda x:-x[1])]) + '\n')
+                fp.write('\n')

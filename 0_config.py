@@ -36,6 +36,8 @@ DATA_TSNE_COMPANY_FOLDER = os.path.join(DATA_TSNE_FOLDER, 'company')
 DATA_PCA_COMPANY_FOLDER = os.path.join(DATA_PCA_FOLDER, 'company')
 DATA_MDS_COMPANY_FOLDER = os.path.join(DATA_MDS_FOLDER, 'company')
 DATA_LTSA_COMPANY_FOLDER = os.path.join(DATA_LTSA_FOLDER, 'company')
+SENTIMENT_LEXICON = os.path.join(DATA_FOLDER, 'LoughranMcDonald_MasterDictionary_2014.csv')
+OUTPUT_FOLDER_SENTIMENT = os.path.join(OUTPUT_FOLDER, 'sentiments')
 
 SECTION_1A = '1a_risk_factors'
 DATA_1A_FOLDER = os.path.join(DATA_SECTON_FOLDER, SECTION_1A)
