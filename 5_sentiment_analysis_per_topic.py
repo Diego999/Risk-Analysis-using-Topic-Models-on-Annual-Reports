@@ -326,8 +326,6 @@ if __name__ == "__main__":
 
         for i, (item, tokens_sent, lemma_sent) in enumerate(data):
             file = os.path.join(path, item[item.rfind('/')+1:])
-            if '45919_0001193125-11-053421.txt' in file:
-                a = 2
             text = data[i][1]
             sents = sentiments[i][1]
             sent_agg = sentiments_agg[i]
@@ -374,6 +372,19 @@ if __name__ == "__main__":
                     if j in final_indices:
                         for k, v in sent.items():
                                 final_sentiments_agg[k] += v
+
+                    # Classify sentences by most common values
+                    local_sents = {'negative': 0, 'positive': 0, 'uncertainty': 0, 'litigious': 0, 'constraining': 0, 'strong_modal': 0, 'weak_modal': 0, 'neutral':0}
+                    if j in final_indices:
+                        for k, v in sent.items():
+                                local_sents[k] += v
+                        local_sents.pop('neutral', None)
+                        key_max = sorted(local_sents.items(), key=lambda x:x[1], reverse=True)[0][0]
+                        path_sents = os.path.join(path, '_' + key_max + '.txt')
+
+                        with open(path_sents, 'a', encoding='utf-8') as fp2:
+                            fp2.write(' '.join(text[j]) + '\t' + ', '.join([str(k)+':'+str(v) for k,v in sorted(local_sents.items(), key=lambda x:-x[1])]) + '\n')
+
                 fp.write(', '.join([str(k)+':'+str(v) for k,v in sorted(final_sentiments_agg.items(), key=lambda x:-x[1])]) + '\n')
                 fp.write('\n')
 
