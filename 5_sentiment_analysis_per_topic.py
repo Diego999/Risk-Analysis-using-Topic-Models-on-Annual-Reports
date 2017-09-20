@@ -288,7 +288,7 @@ if __name__ == "__main__":
         # Pure sentiments
         # Positive
         # Negative
-        # Litigious -> Words reflecting a propsenity for legal contest or, per their label, litigiousness (~731 words)
+        # Litigious -> Words reflecting a propensity for legal contest or, per their label, litigiousness (~731 words)
         #              e.g. claimant, deposition, interlocutory, testimony, tort
         # Uncertainties -> Words denoting uncertainty, with emphasis on the general notion of imprecision rather than exclusively focusing on risk ( ~285 words)
         #                  e.g. approximate, contingency, depend, fluctuate, indefinite, uncertain, variability
@@ -383,4 +383,24 @@ if __name__ == "__main__":
                     for k, v in sent.items():
                         final_sentiments_agg_dup[k] += v
                 fp.write(', '.join([str(k)+':'+str(v) for k,v in sorted(final_sentiments_agg_dup.items(), key=lambda x:-x[1])]) + '\n')
+                fp.write('\n')
+
+                fp.write('<Gather sentences per topic>\n')
+                topics_idx = {}
+                for j, ts in enumerate(topics):
+                    if j in final_indices and len(corpus[i][j]):
+                        topic_id, topic_conf = sorted(ts, key=lambda x:-float(x[1]))[0]
+                        if topic_id not in topics_idx:
+                            topics_idx[topic_id] = []
+                        topics_idx[topic_id].append((j, topic_conf))
+                for topic_id, v in sorted(topics_idx.items(), key=lambda x:len(x[1]), reverse=True):
+                    fp.write('Topic ' + str(topic_id) + '\n')
+                    for sent_id, topic_conf in v:
+                        fp.write('\t' + str(sent_id) + ') ' + ' '.join(text[sent_id]) + ' (' + str(topic_conf) + ')\n')
+
+                        sorted_words_by_category = sorted(sents[sent_id], key=lambda w: sorted(w.sentiment.items(), key=lambda x:len(x[0]) if x[1] else 0, reverse=True)[0][0])
+                        words = ', '.join([w.word + '(' + ','.join([k for k, v in sorted(w.sentiment.items(), key=lambda x:x[0]) if v]) + ')' for w in sorted_words_by_category if not w.sentiment['neutral']])
+                        if words == '':
+                            words = "Only neutral words"
+                        fp.write('\t   ' + words + '\n')
                 fp.write('\n')
