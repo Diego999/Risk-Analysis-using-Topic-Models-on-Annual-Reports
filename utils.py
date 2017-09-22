@@ -30,6 +30,37 @@ def load_pickle(filename):
     return data
 
 
+# Split list every 10'000 elements if contains more than 30'000 elements
+def save_pickle_big_list(data_in, filename):
+    final_data = [data_in]
+    if len(data_in) > 10000:
+        final_data = chunks(data_in, 1000)
+
+    for i, data in enumerate(final_data):
+        filename_i = filename + '_' + str(i)
+        with open(filename_i, 'wb') as fp:
+            pickle.dump(data, fp)
+
+
+def load_pickle_big_list(filename_in):
+    data = []
+
+    filenames = []
+    if not os.path.exists(filename_in):
+        i = 0
+        while os.path.exists(filename_in + '_' + str(i)):
+            filenames.append(filename_in + '_' + str(i))
+            i += 1
+    else:
+        filenames = [filename_in]
+
+    for filename in filenames:
+        with open(filename, 'rb') as fp:
+            data += pickle.load(fp)
+
+    return data
+
+
 # Yield successive n-sized chunks from l.
 def chunks(l, n):
     res = []

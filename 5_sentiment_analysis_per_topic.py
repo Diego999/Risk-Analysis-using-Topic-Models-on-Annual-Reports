@@ -198,10 +198,10 @@ def preprocess(section, data):
         preprocessed_data = preprocess_util(data, lemma_to_idx, idx_to_lemma)
 
         # Save files
-        utils.save_pickle(preprocessed_data, preprocessed_data_file)
+        utils.save_pickle_big_list(preprocessed_data, preprocessed_data_file)
     else:
         # Load files
-        preprocessed_data = utils.load_pickle(preprocessed_data_file)
+        preprocessed_data = utils.load_pickle_big_list(preprocessed_data_file)
 
     return (preprocessed_data, lemma_to_idx, idx_to_lemma)
 
