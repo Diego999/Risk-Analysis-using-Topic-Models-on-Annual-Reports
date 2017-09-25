@@ -194,7 +194,7 @@ def preprocess(section, data):
     idx_to_lemma = utils.load_pickle(section + config.DICT_IDX_LEMMA)
 
     preprocessed_data = None
-    if config.FORCE_PREPROCESSING or not os.path.exists(preprocessed_data_file):
+    if config.FORCE_PREPROCESSING or (not os.path.exists(preprocessed_data_file) and not os.path.exists(preprocessed_data_file + '_0')):
         preprocessed_data = preprocess_util(data, lemma_to_idx, idx_to_lemma)
 
         # Save files
@@ -229,6 +229,8 @@ def preprocessing_topic(data, idx_to_lemma):
 def get_sentence_document_topic_distribution(num_topics, data, corpus, model, output, save=True):
     if os.path.exists(output):
         return utils.load_pickle(output)
+    if os.path.exists(output + '_'):
+        return utils.load_pickle_big_list(output)
 
     sentence_documents_topic_distr = []
     for i, (item, tokens_sent, lemmas_sent) in enumerate(data):
@@ -245,8 +247,7 @@ def get_sentence_document_topic_distribution(num_topics, data, corpus, model, ou
 
     # Save
     if save:
-        with open(output, 'wb') as fp:
-            pickle.dump(sentence_documents_topic_distr, fp)
+        utils.save_pickle_big_list(sentence_documents_topic_distr, output)
 
     return sentence_documents_topic_distr
 
@@ -274,10 +275,12 @@ if __name__ == "__main__":
 
         num_topics = config.TRAIN_PARAMETERS[section][0]
         topics = utils.load_pickle(config.TRAIN_PARAMETERS[section][5])
-        terms_topics = utils.load_pickle(config.TRAIN_PARAMETERS[section][5].replace(config.TOPIC_EXTENSION, config.TERMS_EXTENSION))
-        documents_topic_distr = utils.load_pickle(config.TRAIN_PARAMETERS[section][5].replace(config.TOPIC_EXTENSION, config.DOCS_EXTENSION))
         sentence_documents_topic_distr = get_sentence_document_topic_distribution(num_topics, data, corpus, model, config.TRAIN_PARAMETERS[section][5].replace(config.TOPIC_EXTENSION, config.SENT_DOCS_EXTENSION))
 
+        dictionary = None
+        time_slices = None
+        lemma_to_idx = None
+        idx_to_lemma = None
         # These are NOT pure sentiments
         # Strong modal -> always, definitely, never
         # Moderate model -> can, generally, usually
