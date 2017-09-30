@@ -110,3 +110,5 @@ ENV/
 .mypy_cache/
 
 log.txt
+
+stock_error_*.txt
