@@ -174,12 +174,12 @@ for section in sections_to_analyze:
         company_cik = filenames[i].split(config.CIK_COMPANY_NAME_SEPARATOR)[0].rjust(10, '0')
 
         if company_cik not in cik_2_oindices:
-            sections_to_analyze += 1
+            only_cik += 1
             # Try to find tic of other cik
             if not already_computed:
                 found, tic = fetch_and_insert_tic(company_cik, connection)
 
-    print("{} reports without any ticker symbol".format(sections_to_analyze), '({:.2f}%)'.format(100.0 * float(sections_to_analyze) / len(filenames)))
+    print("{} reports without any ticker symbol".format(only_cik), '({:.2f}%)'.format(100.0 * float(only_cik) / len(filenames)))
 
     for filename in filenames:
         company_cik, temp = filename.split(config.CIK_COMPANY_NAME_SEPARATOR)
