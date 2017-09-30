@@ -4,13 +4,23 @@ import math
 import utils
 import requests
 from bs4 import BeautifulSoup
+import requests
+import os
+import yaml
+import re
+import pandas as pd
+import datetime as dt
+import io
+import time
+import glob
+from dateutil.relativedelta import relativedelta
 analyze_topics_static = __import__('4a_analyze_topics_static')
 config = __import__('0_config')
 
 EXTRA_KEYS = ['cusip', 'gvkey', 'lpermno', 'lpermco', 'tic']
 
 
-def get_cik_lookup(db, connection):
+def get_cik_lookup_table(db, connection):
     already_computed = False
 
     # Check if database already contains the mapping
@@ -150,6 +160,50 @@ def fetch_and_insert_tic(cik, connection):
     return False, None
 
 
+# From https://github.com/sjev/trading-with-python/blob/master/scratch/get_yahoo_data.ipynb
+def stock_get_cookie_and_token():
+    url = 'https://uk.finance.yahoo.com/quote/IBM/history'  # url for a ticker symbol, with a download link
+    r = requests.get(url)  # download page
+    txt = r.text  # extract html
+
+    cookie = r.cookies['B']  # the cooke we're looking for is named 'B'
+
+    # Now we need to extract the token from html.
+    # the string we need looks like this: "CrumbStore":{"crumb":"lQHxbbYOBCq"}
+    # regular expressions will do the trick!
+    pattern = re.compile('.*"CrumbStore":\{"crumb":"(?P<crumb>[^"]+)"\}')
+
+    crumb = None
+    for line in txt.splitlines():
+        m = pattern.match(line)
+        if m is not None:
+            crumb = m.groupdict()['crumb']
+
+    return cookie, crumb
+
+
+# date :(y,m,d)
+def get_stock(ticker, start_date, end_date, cookie, crumb):
+    # prepare input data as a tuple
+    data = (ticker,
+            int(time.mktime(dt.datetime(*start_date).timetuple())),
+            int(time.mktime(dt.datetime(*end_date).timetuple())),
+            crumb)
+
+    # Prepare URL
+    url = "https://query1.finance.yahoo.com/v7/finance/download/{0}?period1={1}&period2={2}&interval=1d&events=history&crumb={3}".format(*data)
+    data = requests.get(url, cookies={'B': cookie})
+
+    # Fetch data
+    buf = io.StringIO(data.text)  # create a buffer
+    df = pd.read_csv(buf, index_col=0)  # convert to pandas DataFrame
+
+    if 'Close' in df:
+        return df['Close'].to_dict() # {Date:Close price}
+    else:
+        return None
+
+
 connection = utils.create_mysql_connection(all_in_mem=True)
 db = wrds.Connection()
 
@@ -161,30 +215,73 @@ db = wrds.Connection()
 # Please note that in this field the negative sign is a symbol and that the value of the bid/ask average is not negative.
 
 #print(data[data.prc < 0])
+# Mapping: db.raw_sql("select * from crsp.ccm_lookup where crsp.ccm_lookup.tic LIKE 'NTT'")
 
-
+if not os.path.exists(config.DATA_STOCKS_FOLDER):
+    os.makedirs(config.DATA_STOCKS_FOLDER)
+stocks_already_computer = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_STOCKS_FOLDER))}
 sections_to_analyze = [config.DATA_1A_FOLDER]
 for section in sections_to_analyze:
-    only_cik = 0
-    filenames = [x[0].split('/')[-1].split('.')[0] for x in analyze_topics_static.load_and_clean_data(section)]
-    cik_2_oindices, already_computed = get_cik_lookup(db, connection)
+    with open('stock_error_{}.txt'.format(section[section.rfind('/')+1:]), 'w') as fp:
+        only_cik = 0
+        filenames = [x[0].split('/')[-1].split('.')[0] for x in analyze_topics_static.load_and_clean_data(section)]
+        cik_2_oindices, already_computed = get_cik_lookup_table(db, connection)
 
-    # Try to fill database with new TICKERS from CIKS
-    for i in range(0, len(filenames)):
-        company_cik = filenames[i].split(config.CIK_COMPANY_NAME_SEPARATOR)[0].rjust(10, '0')
+        # Try to fill database with new TICKERs from CIKs
+        for i in range(0, len(filenames)):
+            company_cik = filenames[i].split(config.CIK_COMPANY_NAME_SEPARATOR)[0].rjust(10, '0')
 
-        if company_cik not in cik_2_oindices:
-            only_cik += 1
-            # Try to find tic of other cik
-            if not already_computed:
-                found, tic = fetch_and_insert_tic(company_cik, connection)
+            if company_cik not in cik_2_oindices:
+                only_cik += 1
+                # Try to find tic of other cik
+                if not already_computed:
+                    found, tic = fetch_and_insert_tic(company_cik, connection)
 
-    print("{} reports without any ticker symbol".format(only_cik), '({:.2f}%)'.format(100.0 * float(only_cik) / len(filenames)))
+        print("{} reports without any ticker symbol".format(only_cik), '({:.2f}%)'.format(100.0 * float(only_cik) / len(filenames)))
 
-    for filename in filenames:
-        company_cik, temp = filename.split(config.CIK_COMPANY_NAME_SEPARATOR)
-        company_cik = company_cik.rjust(10, '0')
-        submitting_entity_cik, year, internal_number = temp.split('-')  # submitting_entity_cik might be different if it was a third-party filer agent
-        year = utils.year_annual_report_comparator(int(year))
+        cookie, crumb = stock_get_cookie_and_token()
+
+        # Get stock prices
+        for filename in filenames:
+            if filename in stocks_already_computer:
+                continue
+            company_cik, temp = filename.split(config.CIK_COMPANY_NAME_SEPARATOR)
+            company_cik = company_cik.rjust(10, '0')
+            submitting_entity_cik, year, internal_number = temp.split('-')  # submitting_entity_cik might be different if it was a third-party filer agent
+            year = utils.year_annual_report_comparator(int(year))
+
+            # If there exists at least one TICKER
+            tickers = set()
+            if company_cik in cik_2_oindices:
+                tickers = cik_2_oindices[company_cik]['tic']
+
+            stocks = []
+            if len(tickers) > 0:
+                # Get release date and compute date 1 year after
+                try:
+                    mysql_key = filename.replace(config.CIK_COMPANY_NAME_SEPARATOR, '/') + '.txt'
+                    with connection.cursor() as cursor:
+                        sql = "SELECT `release_date` from `10k` WHERE `file` = %s;"
+                        cursor.execute(sql, mysql_key)
+                        rows = cursor.fetchall()
+
+                        start_date = rows[0]['release_date']
+                        end_date = start_date + relativedelta(days=1, years=1) # add year + 1 day, because the API return up to endDate (not included)
+
+                    start_date = (start_date.year, start_date.month, start_date.day)
+                    end_date = (end_date.year, end_date.month, end_date.day)
+
+                    for ticker in tickers:
+                        stock = get_stock(ticker, start_date, end_date, cookie, crumb)
+                        if stock is not None:
+                            stocks.append(stock)
+                except:
+                    pass
+
+            if len(stocks) > 0:
+                output = os.path.join(config.DATA_STOCKS_FOLDER, filename) + '.pkl'
+                utils.save_pickle(stocks, output)
+            else:
+                fp.write(filename + '\n')
 
 connection.close()
