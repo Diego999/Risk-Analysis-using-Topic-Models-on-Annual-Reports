@@ -213,8 +213,18 @@ def get_stock_crsp(db, key, index, start_date, end_date):
 
     stock = None
     if len(data) > 0:  # We've found some stocks
-        stock = {date.strftime('%Y-%m-%d'): prc for date, prc in data.set_index('date')['prc'].to_dict().items()}  # Convert to {date:closed price}
+        stock = {date.strftime('%Y-%m-%d'):prc for date, prc in data.set_index('date')['prc'].to_dict().items()}  # Convert to {date:closed price}
     return stock
+
+
+def get_net_income_and_stockholder_equity(db, key, val):
+    # ni gives net income and seq/teq approximately the same thing for stockholder equity. Divide both to obtain return of equity
+    #data = db.raw_sql("select gvkey, tic, cusip, cik, ni, seq, teq, datadate, fyear from compa.funda where key = "'' + val + "'")
+    data = db.raw_sql("select distinct ni, seq, teq, datadate, fyear from compa.funda where " + key + " = '" + val + "' and ni != 'NaN' and (seq != 'NaN' or teq != 'NaN')")
+    res = None
+    if len(data) > 0: # We've found net income/seq
+        res = {date.strftime('%Y-%m-%d'):vals for date, vals in data.set_index('datadate')[['ni', 'seq', 'teq']].T.to_dict().items()}
+    return res
 
 
 connection = utils.create_mysql_connection(all_in_mem=True)
