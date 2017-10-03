@@ -227,103 +227,160 @@ def get_net_income_and_stockholder_equity(db, key, val):
     return res
 
 
+def get_keys_with_net_income_and_stockholder_equity(db, cik):
+    data = db.raw_sql("select distinct tic, cusip, cik from compa.funda where cik = '" + cik + "'")
+    res = {}
+    if len(data) > 0:
+        res = data.set_index(['cik']).T.to_dict()
+    return res
+
+
+def gather_stock(filename, tickers, cusips, lpermnos, lpermcos, connection, db, cookie, crumb):
+    stocks = []
+    start_date = None
+    end_date = None
+    fiscal_year_end = None
+
+    # Gather release_date to compute the start and end date (1 year after)
+    mysql_key = filename.replace(config.CIK_COMPANY_NAME_SEPARATOR, '/') + '.txt'
+    with connection.cursor() as cursor:
+        sql = "SELECT `release_date`, `fiscal_year_end` from `10k` WHERE `file` = %s;"
+        cursor.execute(sql, mysql_key)
+        rows = cursor.fetchall()
+        assert len(rows) == 1
+        start_date, fiscal_year_end = rows[0]['release_date'], rows[0]['fiscal_year_end']
+
+    if start_date is None and fiscal_year_end is not None:
+        start_date = fiscal_year_end  # Happens only for old companies, 1994-12-31
+
+    if start_date is not None:
+        # First try with other indices from CRSP lookup-table
+        indices = {'cusip': cusips, 'permno': lpermnos, 'permco': lpermcos}
+        start_date_others = start_date.strftime('%Y-%m-%d')
+        end_date_others = (start_date + relativedelta(years=1)).strftime('%Y-%m-%d')  # add only 1 year without extra day because MYSQL include the last day in the range
+        for key, indices in indices.items():
+            for index in indices:
+                stock = get_stock_crsp(db, key, index, start_date_others, end_date_others)
+                if stock is not None:
+                    stocks.append(stock)
+
+        # If still no stocks, try to look up stocks using tickers
+        if len(stocks) == 0:
+            for ticker in tickers:
+                # Compute final start/end date
+                end_date_tic = start_date + relativedelta(days=1, years=1)  # add year + 1 day, because the API return up to endDate (not included)
+                start_date_tic = (start_date.year, start_date.month, start_date.day)
+                end_date_tic = (end_date_tic.year, end_date_tic.month, end_date_tic.day)
+                stock = get_stock_yahoo(ticker, start_date_tic, end_date_tic, cookie, crumb)
+                if stock is not None:
+                    stocks.append(stock)
+
+    return stocks
+
+
+def gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, lpermnos, lpermcos, connection, db):
+    ni_seqs = []
+    res = get_net_income_and_stockholder_equity(db, 'cik', company_cik)
+    if len(res) > 0:
+        ni_seqs.append(res)
+
+        # Add other keys
+        if len(tickers) == 0 or len(cusips) == 0:
+            keys = get_keys_with_net_income_and_stockholder_equity(db, company_cik)[company_cik]
+            with connection.cursor() as cursor:
+                if keys['tic'] not in tickers:
+                    tickers.add(keys['tic'])
+                    sql = 'UPDATE companies SET tic = %s WHERE cik = %s;'
+                    cursor.execute(sql, (', '.join(tickers), company_cik))
+                if keys['cusip'] not in cusips:
+                    cusips.add(keys['cusips'])
+                    sql = 'UPDATE companies SET cusip = %s WHERE cik = %s;'
+                    cursor.execute(sql, (', '.join(tickers), company_cik))
+            connection.commit()
+
+    # Try also with other indices from CRSP lookup-table
+    indices = {'cusip': cusips, 'permno': lpermnos, 'permco': lpermcos}
+    for key, indices in indices.items():
+        for index in indices:
+            res = get_net_income_and_stockholder_equity(db, key, index)
+            if res is not None:
+                ni_seqs.append(res)
+
+    return ni_seqs
+
+
 connection = utils.create_mysql_connection(all_in_mem=True)
 db = wrds.Connection()
 
 if not os.path.exists(config.DATA_STOCKS_FOLDER):
     os.makedirs(config.DATA_STOCKS_FOLDER)
+if not os.path.exists(config.DATA_NI_SEQ_FOLDER):
+    os.makedirs(config.DATA_NI_SEQ_FOLDER)
 
 sections_to_analyze = [config.DATA_1A_FOLDER, config.DATA_7A_FOLDER, config.DATA_7_FOLDER]
 for section in sections_to_analyze:
     print(section)
     print('Gathering stocks')
-    stocks_already_computer = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_STOCKS_FOLDER))}
-    with open('stock_error_{}.txt'.format(section[section.rfind('/')+1:]), 'w') as fp:
-        only_cik = 0
-        filenames = [x[0].split('/')[-1].split('.')[0] for x in analyze_topics_static.load_and_clean_data(section)]
-        cik_2_oindices, already_computed = get_cik_lookup_table(db, connection)
+    stocks_already_computed = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_STOCKS_FOLDER))}
+    ni_seqs_already_computed = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_NI_SEQ_FOLDER))}
+    with open('stock_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_stocks:
+        with open('ni_seq_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_ni_seqs:
+            only_cik = 0
+            filenames = [x[0].split('/')[-1].split('.')[0] for x in analyze_topics_static.load_and_clean_data(section)]
+            cik_2_oindices, already_computed = get_cik_lookup_table(db, connection)
 
-        # Try to fill database with new TICKERs from CIKs
-        for i in range(0, len(filenames)):
-            company_cik = filenames[i].split(config.CIK_COMPANY_NAME_SEPARATOR)[0].rjust(10, '0')
+            # Try to fill database with new TICKERs from CIKs
+            for i in range(0, len(filenames)):
+                company_cik = filenames[i].split(config.CIK_COMPANY_NAME_SEPARATOR)[0].rjust(10, '0')
 
-            if company_cik not in cik_2_oindices:
-                only_cik += 1
-                # Try to find tic of other cik
-                if not already_computed:
-                    found, tic = fetch_and_insert_tic(company_cik, connection)
+                if company_cik not in cik_2_oindices:
+                    only_cik += 1
+                    # Try to find tic of other cik
+                    if not already_computed:
+                        found, tic = fetch_and_insert_tic(company_cik, connection)
 
-        print("{} reports without any ticker symbol".format(only_cik), '({:.2f}%)'.format(100.0 * float(only_cik) / len(filenames)))
+            print("{} reports without any ticker symbol".format(only_cik), '({:.2f}%)'.format(100.0 * float(only_cik) / len(filenames)))
 
-        cookie, crumb = stock_get_cookie_and_token()
+            cookie, crumb = stock_get_cookie_and_token()
 
-        # Get stock prices
-        for filename in filenames:
-            if filename in stocks_already_computer:
-                continue
+            for filename in filenames:
+                if filename in stocks_already_computed:
+                    continue
 
-            company_cik, temp = filename.split(config.CIK_COMPANY_NAME_SEPARATOR)
-            company_cik = company_cik.rjust(10, '0')
-            submitting_entity_cik, year, internal_number = temp.split('-')  # submitting_entity_cik might be different if it was a third-party filer agent
-            year = utils.year_annual_report_comparator(int(year))
+                company_cik, temp = filename.split(config.CIK_COMPANY_NAME_SEPARATOR)
+                company_cik = company_cik.rjust(10, '0')
+                submitting_entity_cik, year, internal_number = temp.split('-')  # submitting_entity_cik might be different if it was a third-party filer agent
+                year = utils.year_annual_report_comparator(int(year))
 
-            # If there exists at least one TICKER
-            tickers, cusips, lpermnos,lpermcos = set(), set(), set(), set()
-            if company_cik in cik_2_oindices:
-                tickers = cik_2_oindices[company_cik]['tic'] # Always present
-                if 'cusip' in cik_2_oindices[company_cik]:
-                    cusips = cik_2_oindices[company_cik]['cusip']
-                if 'lpermno' in cik_2_oindices[company_cik]:
-                    lpermnos = cik_2_oindices[company_cik]['lpermno']
-                if 'lpermco' in cik_2_oindices[company_cik]:
-                    lpermcos = cik_2_oindices[company_cik]['lpermco']
+                # If there exists at least one TICKER
+                tickers, cusips, lpermnos,lpermcos = set(), set(), set(), set()
+                if company_cik in cik_2_oindices:
+                    tickers = cik_2_oindices[company_cik]['tic'] # Always present
+                    if 'cusip' in cik_2_oindices[company_cik]:
+                        cusips = cik_2_oindices[company_cik]['cusip']
+                    if 'lpermno' in cik_2_oindices[company_cik]:
+                        lpermnos = cik_2_oindices[company_cik]['lpermno']
+                    if 'lpermco' in cik_2_oindices[company_cik]:
+                        lpermcos = cik_2_oindices[company_cik]['lpermco']
 
-            stocks = []
-            # If there is at least one index
-            if sum([len(x) for x in [tickers, cusips, lpermcos, lpermnos]]) > 0:
-                # Get release date and compute date 1 year after.
-                start_date = None
-                end_date = None
-                fiscal_year_end = None
+                # Get stock prices
+                stocks = []
+                # If there is at least one index
+                if sum([len(x) for x in [tickers, cusips, lpermcos, lpermnos]]) > 0:
+                    stocks = gather_stock(filename, tickers, cusips, lpermnos, lpermcos, connection, db, cookie, crumb)
 
-                # Gather release_date to compute the start and end date
-                mysql_key = filename.replace(config.CIK_COMPANY_NAME_SEPARATOR, '/') + '.txt'
-                with connection.cursor() as cursor:
-                    sql = "SELECT `release_date`, `fiscal_year_end` from `10k` WHERE `file` = %s;"
-                    cursor.execute(sql, mysql_key)
-                    rows = cursor.fetchall()
-                    assert len(rows) == 1
-                    start_date, fiscal_year_end = rows[0]['release_date'], rows[0]['fiscal_year_end']
+                if len(stocks) > 0:
+                    output = os.path.join(config.DATA_STOCKS_FOLDER, filename) + '.pkl'
+                    utils.save_pickle(stocks, output)
+                else:
+                    fp_stocks.write(filename + '\n')
 
-                if start_date is None and fiscal_year_end is not None:
-                    start_date = fiscal_year_end # Happens only for old companies, 1994-12-31
-
-                if start_date is not None:
-                    # First try with other indices from CRSP lookup-table
-                    indices = {'cusip': cusips, 'permno': lpermnos, 'permco': lpermcos}
-                    start_date_others = start_date.strftime('%Y-%m-%d')
-                    end_date_others = (start_date + relativedelta(years=1)).strftime('%Y-%m-%d')  # add only 1 year without extra day because MYSQL include the last day in the range
-                    for key, indices in indices.items():
-                        for index in indices:
-                            stock = get_stock_crsp(db, key, index, start_date_others, end_date_others)
-                            if stock is not None:
-                                stocks.append(stock)
-
-                    # If still no stocks, try to look up stocks using tickers
-                    if len(stocks) == 0:
-                        for ticker in tickers:
-                            # Compute final start/end date
-                            end_date_tic = start_date + relativedelta(days=1, years=1)  # add year + 1 day, because the API return up to endDate (not included)
-                            start_date_tic = (start_date.year, start_date.month, start_date.day)
-                            end_date_tic = (end_date_tic.year, end_date_tic.month, end_date_tic.day)
-                            stock = get_stock_yahoo(ticker, start_date_tic, end_date_tic, cookie, crumb)
-                            if stock is not None:
-                                stocks.append(stock)
-
-            if len(stocks) > 0:
-                output = os.path.join(config.DATA_STOCKS_FOLDER, filename) + '.pkl'
-                utils.save_pickle(stocks, output)
-            else:
-                fp.write(filename + '\n')
+                # Get net income & stockholder's equity
+                ni_seqs = gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, lpermnos, lpermcos, connection, db)
+                if len(ni_seqs) > 0:
+                    output = os.path.join(config.DATA_NI_SEQ_FOLDER, filename) + '.pkl'
+                    utils.save_pickle(ni_seqs, output)
+                else:
+                    fp_ni_seqs.write(filename + '\n')
 
 connection.close()
