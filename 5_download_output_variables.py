@@ -364,8 +364,7 @@ def compute_process_utils(filename, cik_2_oindices, stocks_already_computed, ni_
 
     # Get net income & stockholder's equity
     if filename not in ni_seqs_already_computed:
-        ni_seqs = gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, connection,
-                                                           db)
+        ni_seqs = gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, connection, db)
         if len(ni_seqs) > 0:
             output = os.path.join(config.DATA_NI_SEQ_FOLDER, filename) + '.pkl'
             utils.save_pickle(ni_seqs, output)
