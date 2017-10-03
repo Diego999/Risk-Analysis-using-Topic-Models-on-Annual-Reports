@@ -276,24 +276,39 @@ def gather_stock(filename, tickers, cusips, lpermnos, lpermcos, connection, db, 
     return stocks
 
 
-def gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, lpermnos, lpermcos, connection, db):
+def gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, connection, db):
     ni_seqs = []
     res = get_net_income_and_stockholder_equity(db, 'cik', company_cik)
     if res is not None:
         ni_seqs.append(res)
 
+        unknown_indices = len(tickers) == 0 and len(cusips)
+        incomplete_indices = len(tickers) == 0 or len(cusips) == 0
         # Add other keys
-        if len(tickers) == 0 or len(cusips) == 0:
+        if unknown_indices or incomplete_indices:
             keys = get_keys_with_net_income_and_stockholder_equity(db, company_cik)[company_cik]
             with connection.cursor() as cursor:
-                if keys['tic'] not in tickers:
-                    tickers.add(keys['tic'])
-                    sql = 'UPDATE companies SET tic = %s WHERE cik = %s;'
-                    cursor.execute(sql, (', '.join(tickers), company_cik))
-                if keys['cusip'] not in cusips:
-                    cusips.add(keys['cusip'])
-                    sql = 'UPDATE companies SET cusip = %s WHERE cik = %s;'
-                    cursor.execute(sql, (', '.join(tickers), company_cik))
+                if unknown_indices: # Add to database new values
+                    sql = "INSERT INTO `companies` ({}) VALUES ({})"
+                    sql_fina_keys = ['cik']
+                    sql_final_values = [company_cik]
+                    if len(tickers) == 0:
+                        sql_fina_keys += ['tic']
+                        sql_final_values += [keys['tic']]
+                    if len(cusips) == 0:
+                        sql_fina_keys += ['cusip']
+                        sql_final_values += [keys['cusip']]
+                    sql = sql.format(', '.join(sql_fina_keys), ', '.join(['%s'] * len(sql_fina_keys)))
+                    cursor.execute(sql, tuple(sql_final_values))
+                elif incomplete_indices: # Update database
+                    if keys['tic'] not in tickers:
+                        tickers.add(keys['tic'])
+                        sql = 'UPDATE companies SET tic = %s WHERE cik = %s;'
+                        cursor.execute(sql, (', '.join(tickers), company_cik))
+                    if keys['cusip'] not in cusips:
+                        cusips.add(keys['cusip'])
+                        sql = 'UPDATE companies SET cusip = %s WHERE cik = %s;'
+                        cursor.execute(sql, (', '.join(tickers), company_cik))
             connection.commit()
 
     # Try also with other indices from CRSP lookup-table
@@ -349,7 +364,7 @@ def compute_process_utils(filename, cik_2_oindices, stocks_already_computed, ni_
 
     # Get net income & stockholder's equity
     if filename not in ni_seqs_already_computed:
-        ni_seqs = gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, lpermnos, lpermcos, connection,
+        ni_seqs = gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, connection,
                                                            db)
         if len(ni_seqs) > 0:
             output = os.path.join(config.DATA_NI_SEQ_FOLDER, filename) + '.pkl'
