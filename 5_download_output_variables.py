@@ -1,18 +1,16 @@
 import wrds
-import datetime
-import math
 import utils
-import requests
 from bs4 import BeautifulSoup
 import requests
 import os
-import yaml
 import re
 import pandas as pd
 import datetime as dt
 import io
 import time
 import glob
+import random
+from multiprocessing import Manager, Process
 from dateutil.relativedelta import relativedelta
 analyze_topics_static = __import__('4a_analyze_topics_static')
 config = __import__('0_config')
@@ -309,77 +307,111 @@ def gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, lperm
     return ni_seqs
 
 
-connection = utils.create_mysql_connection(all_in_mem=True)
-db = wrds.Connection()
+def compute_process(filenames, cik_2_oindices, stocks_already_computed, ni_seqs_already_computed, cookie, crumb, error_stocks, error_ni_seqs, pid):
+    connection = utils.create_mysql_connection(all_in_mem=True)
+    db = wrds.Connection()
+
+    for filename in filenames:
+        compute_process_utils(filename, cik_2_oindices, stocks_already_computed, ni_seqs_already_computed, connection, db, cookie, crumb, error_stocks, error_ni_seqs, pid)
+
+    connection.close()
+
+
+def compute_process_utils(filename, cik_2_oindices, stocks_already_computed, ni_seqs_already_computed, connection, db, cookie, crumb, error_stocks, error_ni_seqs, pid):
+    company_cik, temp = filename.split(config.CIK_COMPANY_NAME_SEPARATOR)
+    company_cik = company_cik.rjust(10, '0')
+    submitting_entity_cik, year, internal_number = temp.split('-')  # submitting_entity_cik might be different if it was a third-party filer agent
+    year = utils.year_annual_report_comparator(int(year))
+
+    # If there exists at least one TICKER
+    tickers, cusips, lpermnos, lpermcos = set(), set(), set(), set()
+    if company_cik in cik_2_oindices:
+        tickers = cik_2_oindices[company_cik]['tic']  # Always present
+        if 'cusip' in cik_2_oindices[company_cik]:
+            cusips = cik_2_oindices[company_cik]['cusip']
+        if 'lpermno' in cik_2_oindices[company_cik]:
+            lpermnos = cik_2_oindices[company_cik]['lpermno']
+        if 'lpermco' in cik_2_oindices[company_cik]:
+            lpermcos = cik_2_oindices[company_cik]['lpermco']
+
+    # Get stock prices
+    if False:#filename not in stocks_already_computed:
+        stocks = []
+        # If there is at least one index
+        if sum([len(x) for x in [tickers, cusips, lpermcos, lpermnos]]) > 0:
+            stocks = gather_stock(filename, tickers, cusips, lpermnos, lpermcos, connection, db, cookie, crumb)
+
+        if len(stocks) > 0:
+            output = os.path.join(config.DATA_STOCKS_FOLDER, filename) + '.pkl'
+            utils.save_pickle(stocks, output)
+        else:
+            error_stocks[pid].append(filename)
+
+    # Get net income & stockholder's equity
+    if filename not in ni_seqs_already_computed:
+        ni_seqs = gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, lpermnos, lpermcos, connection,
+                                                           db)
+        if len(ni_seqs) > 0:
+            output = os.path.join(config.DATA_NI_SEQ_FOLDER, filename) + '.pkl'
+            utils.save_pickle(ni_seqs, output)
+        else:
+            error_ni_seqs[pid].append(filename)
+
 
 if not os.path.exists(config.DATA_STOCKS_FOLDER):
     os.makedirs(config.DATA_STOCKS_FOLDER)
 if not os.path.exists(config.DATA_NI_SEQ_FOLDER):
     os.makedirs(config.DATA_NI_SEQ_FOLDER)
 
-sections_to_analyze = [config.DATA_1A_FOLDER, config.DATA_7A_FOLDER, config.DATA_7_FOLDER]
+sections_to_analyze = [config.DATA_1A_FOLDER]#, config.DATA_7A_FOLDER, config.DATA_7_FOLDER]
 for section in sections_to_analyze:
     print(section)
-    print('Gathering stocks')
     stocks_already_computed = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_STOCKS_FOLDER))}
     ni_seqs_already_computed = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_NI_SEQ_FOLDER))}
+
+    connection = utils.create_mysql_connection(all_in_mem=True)
+    db = wrds.Connection()
+    cik_2_oindices, already_computed = get_cik_lookup_table(db, connection)
+    connection.close()
+
+    # Try to fill database with new TICKERs from CIKs
+    only_cik = 0
+    filenames = [x[0].split('/')[-1].split('.')[0] for x in analyze_topics_static.load_and_clean_data(section)]
+    random.shuffle(filenames)  # Better balanced work for multiprocessing
+    for i in range(0, len(filenames)):
+        company_cik = filenames[i].split(config.CIK_COMPANY_NAME_SEPARATOR)[0].rjust(10, '0')
+        if company_cik not in cik_2_oindices:
+            only_cik += 1
+            # Try to find tic of other cik
+            if not already_computed:
+                found, tic = fetch_and_insert_tic(company_cik, connection)
+
+    print("{} reports without any ticker symbol".format(only_cik), '({:.2f}%)'.format(100.0 * float(only_cik) / len(filenames)))
+
+    cookie, crumb = stock_get_cookie_and_token()
+
+    manager = Manager()
+    if config.MULTITHREADING:
+        filenames_chunk = utils.chunks(filenames, 1 + int(len(filenames) / config.NUM_CORES))
+        error_stocks = manager.list([[]] * config.NUM_CORES)
+        error_ni_seqs = manager.list([[]] * config.NUM_CORES)
+
+        procs = []
+        for i in range(config.NUM_CORES):
+            procs.append(Process(target=compute_process, args=(filenames_chunk[i], cik_2_oindices, stocks_already_computed, ni_seqs_already_computed, cookie, crumb, error_stocks, error_ni_seqs, i)))
+            procs[-1].start()
+
+        for p in procs:
+            p.join()
+    else:
+        error_stocks = [None]
+        error_ni_seqs = [None]
+        compute_process(filenames, cik_2_oindices, stocks_already_computed, ni_seqs_already_computed, cookie, crumb, error_stocks, error_ni_seqs, 0)
+
+    # Write backs filenames which obtained an error
     with open('stock_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_stocks:
-        with open('ni_seq_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_ni_seqs:
-            only_cik = 0
-            filenames = [x[0].split('/')[-1].split('.')[0] for x in analyze_topics_static.load_and_clean_data(section)]
-            cik_2_oindices, already_computed = get_cik_lookup_table(db, connection)
-
-            # Try to fill database with new TICKERs from CIKs
-            for i in range(0, len(filenames)):
-                company_cik = filenames[i].split(config.CIK_COMPANY_NAME_SEPARATOR)[0].rjust(10, '0')
-
-                if company_cik not in cik_2_oindices:
-                    only_cik += 1
-                    # Try to find tic of other cik
-                    if not already_computed:
-                        found, tic = fetch_and_insert_tic(company_cik, connection)
-
-            print("{} reports without any ticker symbol".format(only_cik), '({:.2f}%)'.format(100.0 * float(only_cik) / len(filenames)))
-
-            cookie, crumb = stock_get_cookie_and_token()
-
-            for filename in filenames:
-                company_cik, temp = filename.split(config.CIK_COMPANY_NAME_SEPARATOR)
-                company_cik = company_cik.rjust(10, '0')
-                submitting_entity_cik, year, internal_number = temp.split('-')  # submitting_entity_cik might be different if it was a third-party filer agent
-                year = utils.year_annual_report_comparator(int(year))
-
-                # If there exists at least one TICKER
-                tickers, cusips, lpermnos,lpermcos = set(), set(), set(), set()
-                if company_cik in cik_2_oindices:
-                    tickers = cik_2_oindices[company_cik]['tic'] # Always present
-                    if 'cusip' in cik_2_oindices[company_cik]:
-                        cusips = cik_2_oindices[company_cik]['cusip']
-                    if 'lpermno' in cik_2_oindices[company_cik]:
-                        lpermnos = cik_2_oindices[company_cik]['lpermno']
-                    if 'lpermco' in cik_2_oindices[company_cik]:
-                        lpermcos = cik_2_oindices[company_cik]['lpermco']
-
-                # Get stock prices
-                if filename not in stocks_already_computed:
-                    stocks = []
-                    # If there is at least one index
-                    if sum([len(x) for x in [tickers, cusips, lpermcos, lpermnos]]) > 0:
-                        stocks = gather_stock(filename, tickers, cusips, lpermnos, lpermcos, connection, db, cookie, crumb)
-    
-                    if len(stocks) > 0:
-                        output = os.path.join(config.DATA_STOCKS_FOLDER, filename) + '.pkl'
-                        utils.save_pickle(stocks, output)
-                    else:
-                        fp_stocks.write(filename + '\n')
-
-                # Get net income & stockholder's equity
-                if filename not in ni_seqs_already_computed:
-                    ni_seqs = gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, lpermnos, lpermcos, connection, db)
-                    if len(ni_seqs) > 0:
-                        output = os.path.join(config.DATA_NI_SEQ_FOLDER, filename) + '.pkl'
-                        utils.save_pickle(ni_seqs, output)
-                    else:
-                        fp_ni_seqs.write(filename + '\n')
-
-connection.close()
+        for f in error_stocks:
+            fp_stocks.write(f + '\n')
+    with open('ni_seq_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_ni_seqs:
+        for f in error_ni_seqs:
+            fp_ni_seqs.write(f + '\n')
