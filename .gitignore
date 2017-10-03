@@ -112,3 +112,4 @@ ENV/
 log.txt
 
 stock_error_*.txt
+ni_seq_error_*
