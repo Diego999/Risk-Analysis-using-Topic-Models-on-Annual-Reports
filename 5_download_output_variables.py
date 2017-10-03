@@ -281,7 +281,7 @@ def gather_stock(filename, tickers, cusips, lpermnos, lpermcos, connection, db, 
 def gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, lpermnos, lpermcos, connection, db):
     ni_seqs = []
     res = get_net_income_and_stockholder_equity(db, 'cik', company_cik)
-    if len(res) > 0:
+    if res is not None:
         ni_seqs.append(res)
 
         # Add other keys
@@ -293,13 +293,13 @@ def gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, lperm
                     sql = 'UPDATE companies SET tic = %s WHERE cik = %s;'
                     cursor.execute(sql, (', '.join(tickers), company_cik))
                 if keys['cusip'] not in cusips:
-                    cusips.add(keys['cusips'])
+                    cusips.add(keys['cusip'])
                     sql = 'UPDATE companies SET cusip = %s WHERE cik = %s;'
                     cursor.execute(sql, (', '.join(tickers), company_cik))
             connection.commit()
 
     # Try also with other indices from CRSP lookup-table
-    indices = {'cusip': cusips, 'permno': lpermnos, 'permco': lpermcos}
+    indices = {'cusip': cusips, 'tic': tickers}
     for key, indices in indices.items():
         for index in indices:
             res = get_net_income_and_stockholder_equity(db, key, index)
@@ -344,9 +344,6 @@ for section in sections_to_analyze:
             cookie, crumb = stock_get_cookie_and_token()
 
             for filename in filenames:
-                if filename in stocks_already_computed:
-                    continue
-
                 company_cik, temp = filename.split(config.CIK_COMPANY_NAME_SEPARATOR)
                 company_cik = company_cik.rjust(10, '0')
                 submitting_entity_cik, year, internal_number = temp.split('-')  # submitting_entity_cik might be different if it was a third-party filer agent
@@ -364,23 +361,25 @@ for section in sections_to_analyze:
                         lpermcos = cik_2_oindices[company_cik]['lpermco']
 
                 # Get stock prices
-                stocks = []
-                # If there is at least one index
-                if sum([len(x) for x in [tickers, cusips, lpermcos, lpermnos]]) > 0:
-                    stocks = gather_stock(filename, tickers, cusips, lpermnos, lpermcos, connection, db, cookie, crumb)
-
-                if len(stocks) > 0:
-                    output = os.path.join(config.DATA_STOCKS_FOLDER, filename) + '.pkl'
-                    utils.save_pickle(stocks, output)
-                else:
-                    fp_stocks.write(filename + '\n')
+                if filename not in stocks_already_computed:
+                    stocks = []
+                    # If there is at least one index
+                    if sum([len(x) for x in [tickers, cusips, lpermcos, lpermnos]]) > 0:
+                        stocks = gather_stock(filename, tickers, cusips, lpermnos, lpermcos, connection, db, cookie, crumb)
+    
+                    if len(stocks) > 0:
+                        output = os.path.join(config.DATA_STOCKS_FOLDER, filename) + '.pkl'
+                        utils.save_pickle(stocks, output)
+                    else:
+                        fp_stocks.write(filename + '\n')
 
                 # Get net income & stockholder's equity
-                ni_seqs = gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, lpermnos, lpermcos, connection, db)
-                if len(ni_seqs) > 0:
-                    output = os.path.join(config.DATA_NI_SEQ_FOLDER, filename) + '.pkl'
-                    utils.save_pickle(ni_seqs, output)
-                else:
-                    fp_ni_seqs.write(filename + '\n')
+                if filename not in ni_seqs_already_computed:
+                    ni_seqs = gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, lpermnos, lpermcos, connection, db)
+                    if len(ni_seqs) > 0:
+                        output = os.path.join(config.DATA_NI_SEQ_FOLDER, filename) + '.pkl'
+                        utils.save_pickle(ni_seqs, output)
+                    else:
+                        fp_ni_seqs.write(filename + '\n')
 
 connection.close()
