@@ -183,7 +183,7 @@ def stock_get_cookie_and_token():
 
 
 # date :(y,m,d)
-def get_stock(ticker, start_date, end_date, cookie, crumb):
+def get_stock_yahoo(ticker, start_date, end_date, cookie, crumb):
     # prepare input data as a tuple
     data = (ticker,
             int(time.mktime(dt.datetime(*start_date).timetuple())),
@@ -204,24 +204,30 @@ def get_stock(ticker, start_date, end_date, cookie, crumb):
         return None
 
 
+def get_stock_crsp(db, key, index, start_date, end_date):
+    data = db.raw_sql('select * from crsp.dsf where ' + key + '=\'' + index + '\' and date(crsp.dsf.date) between date(\'' + start_date + '\') and date(\'' + end_date + '\')')
+    # 	prc: A positive amount is an actual close for the trading date while a negative amount denotes the average between BIDLO and ASKHI.
+    # Prc is the closing price or the negative bid/ask average for a trading day. If the closing price is not available on any given trading day,
+    # the number in the price field has a negative sign to indicate that it is a bid/ask average and not an actual closing price.
+    # Please note that in this field the negative sign is a symbol and that the value of the bid/ask average is not negative.
+
+    stock = None
+    if len(data) > 0:  # We've found some stocks
+        stock = {date.strftime('%Y-%m-%d'): prc for date, prc in data.set_index('date')['prc'].to_dict().items()}  # Convert to {date:closed price}
+    return stock
+
+
 connection = utils.create_mysql_connection(all_in_mem=True)
 db = wrds.Connection()
 
-#data = db.raw_sql('select * from crsp.dsf where permno=12490')
-#print(data[data['date'] > datetime.date(year=2016, month=12, day=27)])
-# 	prc: A positive amount is an actual close for the trading date while a negative amount denotes the average between BIDLO and ASKHI.
-# Prc is the closing price or the negative bid/ask average for a trading day. If the closing price is not available on any given trading day,
-# the number in the price field has a negative sign to indicate that it is a bid/ask average and not an actual closing price.
-# Please note that in this field the negative sign is a symbol and that the value of the bid/ask average is not negative.
-
-#print(data[data.prc < 0])
-# Mapping: db.raw_sql("select * from crsp.ccm_lookup where crsp.ccm_lookup.tic LIKE 'NTT'")
-
 if not os.path.exists(config.DATA_STOCKS_FOLDER):
     os.makedirs(config.DATA_STOCKS_FOLDER)
-stocks_already_computer = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_STOCKS_FOLDER))}
-sections_to_analyze = [config.DATA_1A_FOLDER]
+
+sections_to_analyze = [config.DATA_1A_FOLDER, config.DATA_7A_FOLDER, config.DATA_7_FOLDER]
 for section in sections_to_analyze:
+    print(section)
+    print('Gathering stocks')
+    stocks_already_computer = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_STOCKS_FOLDER))}
     with open('stock_error_{}.txt'.format(section[section.rfind('/')+1:]), 'w') as fp:
         only_cik = 0
         filenames = [x[0].split('/')[-1].split('.')[0] for x in analyze_topics_static.load_and_clean_data(section)]
@@ -245,38 +251,64 @@ for section in sections_to_analyze:
         for filename in filenames:
             if filename in stocks_already_computer:
                 continue
+
             company_cik, temp = filename.split(config.CIK_COMPANY_NAME_SEPARATOR)
             company_cik = company_cik.rjust(10, '0')
             submitting_entity_cik, year, internal_number = temp.split('-')  # submitting_entity_cik might be different if it was a third-party filer agent
             year = utils.year_annual_report_comparator(int(year))
 
             # If there exists at least one TICKER
-            tickers = set()
+            tickers, cusips, lpermnos,lpermcos = set(), set(), set(), set()
             if company_cik in cik_2_oindices:
-                tickers = cik_2_oindices[company_cik]['tic']
+                tickers = cik_2_oindices[company_cik]['tic'] # Always present
+                if 'cusip' in cik_2_oindices[company_cik]:
+                    cusips = cik_2_oindices[company_cik]['cusip']
+                if 'lpermno' in cik_2_oindices[company_cik]:
+                    lpermnos = cik_2_oindices[company_cik]['lpermno']
+                if 'lpermco' in cik_2_oindices[company_cik]:
+                    lpermcos = cik_2_oindices[company_cik]['lpermco']
 
             stocks = []
-            if len(tickers) > 0:
-                # Get release date and compute date 1 year after
-                try:
-                    mysql_key = filename.replace(config.CIK_COMPANY_NAME_SEPARATOR, '/') + '.txt'
-                    with connection.cursor() as cursor:
-                        sql = "SELECT `release_date` from `10k` WHERE `file` = %s;"
-                        cursor.execute(sql, mysql_key)
-                        rows = cursor.fetchall()
+            # If there is at least one index
+            if sum([len(x) for x in [tickers, cusips, lpermcos, lpermnos]]) > 0:
+                # Get release date and compute date 1 year after.
+                start_date = None
+                end_date = None
+                fiscal_year_end = None
 
-                        start_date = rows[0]['release_date']
-                        end_date = start_date + relativedelta(days=1, years=1) # add year + 1 day, because the API return up to endDate (not included)
+                # Gather release_date to compute the start and end date
+                mysql_key = filename.replace(config.CIK_COMPANY_NAME_SEPARATOR, '/') + '.txt'
+                with connection.cursor() as cursor:
+                    sql = "SELECT `release_date`, `fiscal_year_end` from `10k` WHERE `file` = %s;"
+                    cursor.execute(sql, mysql_key)
+                    rows = cursor.fetchall()
+                    assert len(rows) == 1
+                    start_date, fiscal_year_end = rows[0]['release_date'], rows[0]['fiscal_year_end']
 
-                    start_date = (start_date.year, start_date.month, start_date.day)
-                    end_date = (end_date.year, end_date.month, end_date.day)
+                if start_date is None and fiscal_year_end is not None:
+                    start_date = fiscal_year_end # Happens only for old companies, 1994-12-31
 
-                    for ticker in tickers:
-                        stock = get_stock(ticker, start_date, end_date, cookie, crumb)
-                        if stock is not None:
-                            stocks.append(stock)
-                except:
-                    pass
+                if start_date is not None:
+                    # First try with other indices from CRSP lookup-table
+                    indices = {'cusip': cusips, 'permno': lpermnos, 'permco': lpermcos}
+                    start_date_others = start_date.strftime('%Y-%m-%d')
+                    end_date_others = (start_date + relativedelta(years=1)).strftime('%Y-%m-%d')  # add only 1 year without extra day because MYSQL include the last day in the range
+                    for key, indices in indices.items():
+                        for index in indices:
+                            stock = get_stock_crsp(db, key, index, start_date_others, end_date_others)
+                            if stock is not None:
+                                stocks.append(stock)
+
+                    # If still no stocks, try to look up stocks using tickers
+                    if len(stocks) == 0:
+                        for ticker in tickers:
+                            # Compute final start/end date
+                            end_date_tic = start_date + relativedelta(days=1, years=1)  # add year + 1 day, because the API return up to endDate (not included)
+                            start_date_tic = (start_date.year, start_date.month, start_date.day)
+                            end_date_tic = (end_date_tic.year, end_date_tic.month, end_date_tic.day)
+                            stock = get_stock_yahoo(ticker, start_date_tic, end_date_tic, cookie, crumb)
+                            if stock is not None:
+                                stocks.append(stock)
 
             if len(stocks) > 0:
                 output = os.path.join(config.DATA_STOCKS_FOLDER, filename) + '.pkl'
