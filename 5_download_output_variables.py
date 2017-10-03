@@ -308,7 +308,7 @@ def gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, conne
                     if keys['cusip'] not in cusips:
                         cusips.add(keys['cusip'])
                         sql = 'UPDATE companies SET cusip = %s WHERE cik = %s;'
-                        cursor.execute(sql, (', '.join(cusip), company_cik))
+                        cursor.execute(sql, (', '.join(cusips), company_cik))
             connection.commit()
 
     # Try also with other indices from CRSP lookup-table
