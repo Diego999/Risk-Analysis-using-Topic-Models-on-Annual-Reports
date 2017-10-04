@@ -364,7 +364,8 @@ def compute_process_utils(filename, cik_2_oindices, stocks_already_computed, ni_
     error_ni_seqs[pid] += error_ni_seqs_utils
 
     # Get stock prices
-    if False:#filename not in stocks_already_computed:
+    error_stocks_utils = []
+    if filename not in stocks_already_computed:
         stocks = []
         # If there is at least one index
         if sum([len(x) for x in [tickers, cusips, lpermcos, lpermnos]]) > 0:
@@ -374,16 +375,8 @@ def compute_process_utils(filename, cik_2_oindices, stocks_already_computed, ni_
             output = os.path.join(config.DATA_STOCKS_FOLDER, filename) + '.pkl'
             utils.save_pickle(stocks, output)
         else:
-            error_stocks[pid].append(filename)
-
-    # Get net income & stockholder's equity
-    if filename not in ni_seqs_already_computed:
-        ni_seqs = gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, connection, db)
-        if len(ni_seqs) > 0:
-            output = os.path.join(config.DATA_NI_SEQ_FOLDER, filename) + '.pkl'
-            utils.save_pickle(ni_seqs, output)
-        else:
-            error_ni_seqs[pid].append(filename)
+            error_stocks_utils.append(filename)
+    error_stocks[pid] += error_stocks_utils
 
 
 if not os.path.exists(config.DATA_STOCKS_FOLDER):
