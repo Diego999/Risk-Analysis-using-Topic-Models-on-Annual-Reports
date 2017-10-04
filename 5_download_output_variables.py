@@ -279,13 +279,13 @@ def gather_stock(filename, tickers, cusips, lpermnos, lpermcos, connection, db, 
     return stocks
 
 
-def gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, connection, db):
+def gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, lpermnos, lpermcos, connection, db):
     ni_seqs = []
     res = get_net_income_and_stockholder_equity(db, 'cik', company_cik)
     if res is not None:
         ni_seqs.append(res)
 
-        unknown_indices = len(tickers) == 0 and len(cusips)
+        unknown_indices = len(tickers) == 0 and len(cusips) == 0 and len(lpermnos) == 0 and len(lpermcos) == 0
         incomplete_indices = len(tickers) == 0 or len(cusips) == 0
         # Add other keys
         if unknown_indices or incomplete_indices:
@@ -351,6 +351,17 @@ def compute_process_utils(filename, cik_2_oindices, stocks_already_computed, ni_
             lpermnos = cik_2_oindices[company_cik]['lpermno']
         if 'lpermco' in cik_2_oindices[company_cik]:
             lpermcos = cik_2_oindices[company_cik]['lpermco']
+
+    # Get net income & stockholder's equity
+    error_ni_seqs_utils = []
+    if filename not in ni_seqs_already_computed:
+        ni_seqs = gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, lpermnos, lpermcos, connection, db)
+        if len(ni_seqs) > 0:
+            output = os.path.join(config.DATA_NI_SEQ_FOLDER, filename) + '.pkl'
+            utils.save_pickle(ni_seqs, output)
+        else:
+            error_ni_seqs_utils.append(filename)
+    error_ni_seqs[pid] += error_ni_seqs_utils
 
     # Get stock prices
     if False:#filename not in stocks_already_computed:
