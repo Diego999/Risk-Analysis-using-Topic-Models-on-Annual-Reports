@@ -194,12 +194,15 @@ def get_stock_yahoo(ticker, start_date, end_date, cookie, crumb):
 
     # Fetch data
     buf = io.StringIO(data.text)  # create a buffer
-    df = pd.read_csv(buf, index_col=0)  # convert to pandas DataFrame
+    res = None
+    try:
+        df = pd.read_csv(buf, index_col=0)  # convert to pandas DataFrame
+        if 'Close' in df:
+            res =  df['Close'].to_dict() # {Date:Close price}
+    except:
+        pass
 
-    if 'Close' in df:
-        return df['Close'].to_dict() # {Date:Close price}
-    else:
-        return None
+    return res
 
 
 def get_stock_crsp(db, key, index, start_date, end_date):
