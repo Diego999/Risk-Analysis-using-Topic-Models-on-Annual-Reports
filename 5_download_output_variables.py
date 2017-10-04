@@ -384,7 +384,7 @@ if not os.path.exists(config.DATA_STOCKS_FOLDER):
 if not os.path.exists(config.DATA_NI_SEQ_FOLDER):
     os.makedirs(config.DATA_NI_SEQ_FOLDER)
 
-sections_to_analyze = [config.DATA_1A_FOLDER]#, config.DATA_7A_FOLDER, config.DATA_7_FOLDER]
+sections_to_analyze = [config.DATA_1A_FOLDER, config.DATA_7A_FOLDER, config.DATA_7_FOLDER]
 for section in sections_to_analyze:
     print(section)
     stocks_already_computed = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_STOCKS_FOLDER))}
@@ -399,6 +399,7 @@ for section in sections_to_analyze:
     only_cik = 0
     filenames = [x[0].split('/')[-1].split('.')[0] for x in analyze_topics_static.load_and_clean_data(section)]
     random.shuffle(filenames)  # Better balanced work for multiprocessing
+
     for i in range(0, len(filenames)):
         company_cik = filenames[i].split(config.CIK_COMPANY_NAME_SEPARATOR)[0].rjust(10, '0')
         if company_cik not in cik_2_oindices:
@@ -406,7 +407,7 @@ for section in sections_to_analyze:
             # Try to find tic of other cik
             if not already_computed:
                 found, tic = fetch_and_insert_tic(company_cik, connection)
-
+    
     print("{} reports without any ticker symbol".format(only_cik), '({:.2f}%)'.format(100.0 * float(only_cik) / len(filenames)))
 
     cookie, crumb = stock_get_cookie_and_token()
