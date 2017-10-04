@@ -425,14 +425,20 @@ for section in sections_to_analyze:
         for p in procs:
             p.join()
     else:
-        error_stocks = [None]
-        error_ni_seqs = [None]
+        error_stocks = [[]]
+        error_ni_seqs = [[]]
         compute_process(filenames, cik_2_oindices, stocks_already_computed, ni_seqs_already_computed, cookie, crumb, error_stocks, error_ni_seqs, 0)
 
+    # Reduce
+    error_stocks = sum(error_stocks, [])
+    error_ni_seqs = sum(error_ni_seqs, [])
+
     # Write backs filenames which obtained an error
-    with open('stock_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_stocks:
-        for f in error_stocks:
-            fp_stocks.write(f + '\n')
-    with open('ni_seq_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_ni_seqs:
-        for f in error_ni_seqs:
-            fp_ni_seqs.write(f + '\n')
+    if len(error_stocks) > 0:
+        with open('stock_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_stocks:
+            for f in error_stocks:
+                fp_stocks.write(f + '\n')
+    if len(error_ni_seqs) > 0:
+        with open('ni_seq_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_ni_seqs:
+            for f in error_ni_seqs:
+                fp_ni_seqs.write(f + '\n')
