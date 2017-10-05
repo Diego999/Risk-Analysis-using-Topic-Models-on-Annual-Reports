@@ -483,79 +483,79 @@ def compute_process_utils(filename, cik_2_oindices, sec_ind_lookup_table, stocks
             error_sec_inds_utils.append(filename)
     error_sec_inds[pid] += error_sec_inds_utils
 
+if __name__ == "__main__":
+    if not os.path.exists(config.DATA_STOCKS_FOLDER):
+        os.makedirs(config.DATA_STOCKS_FOLDER)
+    if not os.path.exists(config.DATA_NI_SEQ_FOLDER):
+        os.makedirs(config.DATA_NI_SEQ_FOLDER)
+    if not os.path.exists(config.DATA_SEC_IND_FOLDER):
+        os.makedirs(config.DATA_SEC_IND_FOLDER)
 
-if not os.path.exists(config.DATA_STOCKS_FOLDER):
-    os.makedirs(config.DATA_STOCKS_FOLDER)
-if not os.path.exists(config.DATA_NI_SEQ_FOLDER):
-    os.makedirs(config.DATA_NI_SEQ_FOLDER)
-if not os.path.exists(config.DATA_SEC_IND_FOLDER):
-    os.makedirs(config.DATA_SEC_IND_FOLDER)
+    sec_ind_lookup_table = convert_comp_sec_ind()
 
-sec_ind_lookup_table = convert_comp_sec_ind()
+    sections_to_analyze = [config.DATA_1A_FOLDER, config.DATA_7A_FOLDER, config.DATA_7_FOLDER]
+    for section in sections_to_analyze:
+        print(section)
+        stocks_already_computed = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_STOCKS_FOLDER))}
+        ni_seqs_already_computed = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_NI_SEQ_FOLDER))}
+        sec_ind_already_computed = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_SEC_IND_FOLDER))}
 
-sections_to_analyze = [config.DATA_1A_FOLDER, config.DATA_7A_FOLDER, config.DATA_7_FOLDER]
-for section in sections_to_analyze:
-    print(section)
-    stocks_already_computed = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_STOCKS_FOLDER))}
-    ni_seqs_already_computed = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_NI_SEQ_FOLDER))}
-    sec_ind_already_computed = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_SEC_IND_FOLDER))}
+        connection = utils.create_mysql_connection(all_in_mem=True)
+        db = wrds.Connection()
+        cik_2_oindices, already_computed = get_cik_lookup_table(db, connection)
+        connection.close()
 
-    connection = utils.create_mysql_connection(all_in_mem=True)
-    db = wrds.Connection()
-    cik_2_oindices, already_computed = get_cik_lookup_table(db, connection)
-    connection.close()
+        # Try to fill database with new TICKERs from CIKs
+        only_cik = 0
+        filenames = [x[0].split('/')[-1].split('.')[0] for x in analyze_topics_static.load_and_clean_data(section)]
+        random.shuffle(filenames)  # Better balanced work for multiprocessing
 
-    # Try to fill database with new TICKERs from CIKs
-    only_cik = 0
-    filenames = [x[0].split('/')[-1].split('.')[0] for x in analyze_topics_static.load_and_clean_data(section)]
-    random.shuffle(filenames)  # Better balanced work for multiprocessing
+        for i in range(0, len(filenames)):
+            company_cik = filenames[i].split(config.CIK_COMPANY_NAME_SEPARATOR)[0].rjust(10, '0')
+            if company_cik not in cik_2_oindices:
+                only_cik += 1
+                # Try to find tic of other cik
+                if not already_computed:
+                    found, tic = fetch_and_insert_tic(company_cik, connection)
 
-    for i in range(0, len(filenames)):
-        company_cik = filenames[i].split(config.CIK_COMPANY_NAME_SEPARATOR)[0].rjust(10, '0')
-        if company_cik not in cik_2_oindices:
-            only_cik += 1
-            # Try to find tic of other cik
-            if not already_computed:
-                found, tic = fetch_and_insert_tic(company_cik, connection)
-    
-    print("{} reports without any ticker symbol".format(only_cik), '({:.2f}%)'.format(100.0 * float(only_cik) / len(filenames)))
+        print("{} reports without any ticker symbol".format(only_cik), '({:.2f}%)'.format(100.0 * float(only_cik) / len(filenames)))
 
-    cookie, crumb = stock_get_cookie_and_token()
+        cookie, crumb = stock_get_cookie_and_token()
 
-    manager = Manager()
-    if config.MULTITHREADING:
-        filenames_chunk = utils.chunks(filenames, 1 + int(len(filenames) / config.NUM_CORES))
-        error_stocks = manager.list([[]] * config.NUM_CORES)
-        error_ni_seqs = manager.list([[]] * config.NUM_CORES)
-        error_sec_inds = manager.list([[]] * config.NUM_CORES)
-        procs = []
-        for i in range(config.NUM_CORES):
-            procs.append(Process(target=compute_process, args=(filenames_chunk[i], cik_2_oindices, sec_ind_lookup_table, stocks_already_computed, ni_seqs_already_computed, sec_ind_already_computed, cookie, crumb, error_stocks, error_ni_seqs, error_sec_inds, i)))
-            procs[-1].start()
+        manager = Manager()
+        if config.MULTITHREADING:
+            filenames_chunk = utils.chunks(filenames, 1 + int(len(filenames) / config.NUM_CORES))
+            error_stocks = manager.list([[]] * config.NUM_CORES)
+            error_ni_seqs = manager.list([[]] * config.NUM_CORES)
+            error_sec_inds = manager.list([[]] * config.NUM_CORES)
+            procs = []
+            for i in range(config.NUM_CORES):
+                procs.append(Process(target=compute_process, args=(filenames_chunk[i], cik_2_oindices, sec_ind_lookup_table, stocks_already_computed, ni_seqs_already_computed, sec_ind_already_computed, cookie, crumb, error_stocks, error_ni_seqs, error_sec_inds, i)))
+                procs[-1].start()
 
-        for p in procs:
-            p.join()
-    else:
-        error_stocks = [[]]
-        error_ni_seqs = [[]]
-        error_sec_inds = [[]]
-        compute_process(filenames, cik_2_oindices, sec_ind_lookup_table, stocks_already_computed, ni_seqs_already_computed, sec_ind_already_computed, sec_ind_already_computed, cookie, crumb, error_stocks, error_ni_seqs, 0)
+            for p in procs:
+                p.join()
+        else:
+            error_stocks = [[]]
+            error_ni_seqs = [[]]
+            error_sec_inds = [[]]
+            compute_process(filenames, cik_2_oindices, sec_ind_lookup_table, stocks_already_computed, ni_seqs_already_computed, sec_ind_already_computed, sec_ind_already_computed, cookie, crumb, error_stocks, error_ni_seqs, 0)
 
-    # Reduce
-    error_stocks = sum(error_stocks, [])
-    error_ni_seqs = sum(error_ni_seqs, [])
-    error_sec_inds = sum(error_sec_inds, [])
+        # Reduce
+        error_stocks = sum(error_stocks, [])
+        error_ni_seqs = sum(error_ni_seqs, [])
+        error_sec_inds = sum(error_sec_inds, [])
 
-    # Write backs filenames which obtained an error
-    if len(error_stocks) > 0:
-        with open('stock_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_stocks:
-            for f in error_stocks:
-                fp_stocks.write(f + '\n')
-    if len(error_ni_seqs) > 0:
-        with open('ni_seq_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_ni_seqs:
-            for f in error_ni_seqs:
-                fp_ni_seqs.write(f + '\n')
-    if len(error_sec_inds) > 0:
-        with open('ni_seq_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_ni_seqs:
-            for f in error_sec_inds:
-                fp_ni_seqs.write(f + '\n')
+        # Write backs filenames which obtained an error
+        if len(error_stocks) > 0:
+            with open('stock_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_stocks:
+                for f in error_stocks:
+                    fp_stocks.write(f + '\n')
+        if len(error_ni_seqs) > 0:
+            with open('ni_seq_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_ni_seqs:
+                for f in error_ni_seqs:
+                    fp_ni_seqs.write(f + '\n')
+        if len(error_sec_inds) > 0:
+            with open('ni_seq_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_ni_seqs:
+                for f in error_sec_inds:
+                    fp_ni_seqs.write(f + '\n')
