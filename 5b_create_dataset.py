@@ -18,6 +18,38 @@ def get_topic_per_documents(section, data_):
 
     num_topics = config.TRAIN_PARAMETERS[section][0]
     return infer_topics.get_document_topic_distribution(num_topics, data, corpus, model, config.TRAIN_PARAMETERS[section][5].replace(config.TOPIC_EXTENSION, config.DOCS_EXTENSION))
+
+
+def get_data_from_pickles(filename, data_filenames):
+    if filename not in data_filenames:
+        return None
+
+    data = utils.load_pickle(data_filenames[filename])
+    # Remove duplicate
+    for i in range(0, len(data)):
+        for j in range(1, len(data)):
+            if data[i] == data[j]:
+                data[j] = None
+    data = [x for x in data if x is not None]
+    assert len(data) == 1
+    data = data[0]
+
+    return data
+
+
+def compute_ln_volatility(stocks):
+    if stocks is None or len(stocks) == 0:
+        return float('nan')
+
+    all_Pts = sorted(stocks.items(), key=lambda x:x[0]) # Sort by date
+    # There might be a "nan" is on single value, we should remove them to avoid having a bad computation !
+    Pt = np.array([x[1] for x in all_Pts[1:] if not math.isnan(x[1])])
+    Pt_1 = np.array([x[1] for x in all_Pts[:-1] if not math.isnan(x[1])])
+    rt = Pt/Pt_1 - 1.0
+
+    # Warning: depending the paper, rt = ln(Pt) - ln(Pt_1)
+    return np.log(np.std(rt)) # ln(std(rt)) where rt = Pt - P_(t-1)
+
 stocks = {f.split('/')[-1][:-4]:f for f in glob.glob("{}/*.pkl".format(config.DATA_STOCKS_FOLDER))}
 ni_seqs = {f.split('/')[-1][:-4]:f for f in glob.glob("{}/*.pkl".format(config.DATA_NI_SEQ_FOLDER))}
 sec_inds = {f.split('/')[-1][:-4]:f for f in glob.glob("{}/*.pkl".format(config.DATA_SEC_IND_FOLDER))}
@@ -31,3 +63,8 @@ if __name__ == "__main__":
         # add topics
         for file, attributes in data.items():
             data[file]['topics'] = topics[file]
+
+        # add ln volatility and return on equity
+        for file, attributes in data.items():
+            current_stocks = get_data_from_pickles(file, stocks)
+            data[file]['volatility'] = compute_ln_volatility(current_stocks)
