@@ -483,6 +483,7 @@ def compute_process_utils(filename, cik_2_oindices, sec_ind_lookup_table, stocks
             error_sec_inds_utils.append(filename)
     error_sec_inds[pid] += error_sec_inds_utils
 
+
 if __name__ == "__main__":
     if not os.path.exists(config.DATA_STOCKS_FOLDER):
         os.makedirs(config.DATA_STOCKS_FOLDER)
