@@ -50,6 +50,24 @@ def compute_ln_volatility(stocks):
     # Warning: depending the paper, rt = ln(Pt) - ln(Pt_1)
     return np.log(np.std(rt)) # ln(std(rt)) where rt = Pt - P_(t-1)
 
+
+# Return ROF (*100 to have %)
+def compute_return_on_equity(filename, ni_seq):
+    if ni_seq is None or len(ni_seq) == 0:
+        return float('nan'), float('nan'), float('nan')
+
+    ni_seq_per_year = {k.split('-')[0][-2:]:v for k, v in ni_seq.items()}
+    file_year = filename.split('_')[1].split('-')[1]
+    vals = ni_seq_per_year[file_year]
+    ni = vals['ni']
+    seq = vals['seq'] if not math.isnan(vals['seq']) else vals['teq']
+    roe = float('nan')
+    if not math.isnan(seq):
+        roe = ni/seq
+
+    return ni, seq, roe
+
+
 stocks = {f.split('/')[-1][:-4]:f for f in glob.glob("{}/*.pkl".format(config.DATA_STOCKS_FOLDER))}
 ni_seqs = {f.split('/')[-1][:-4]:f for f in glob.glob("{}/*.pkl".format(config.DATA_NI_SEQ_FOLDER))}
 sec_inds = {f.split('/')[-1][:-4]:f for f in glob.glob("{}/*.pkl".format(config.DATA_SEC_IND_FOLDER))}
@@ -68,3 +86,5 @@ if __name__ == "__main__":
         for file, attributes in data.items():
             current_stocks = get_data_from_pickles(file, stocks)
             data[file]['volatility'] = compute_ln_volatility(current_stocks)
+            ni_seq = get_data_from_pickles(file, ni_seqs)
+            data[file]['return_on_equity'] = compute_return_on_equity(file, ni_seq)
