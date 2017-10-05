@@ -29,6 +29,7 @@ DATA_AR_FOLDER = os.path.join(DATA_FOLDER, 'ar')
 DATA_SECTON_FOLDER = os.path.join(DATA_FOLDER, 'sections')
 DATA_STOCKS_FOLDER = os.path.join(DATA_FOLDER, 'stocks')
 DATA_NI_SEQ_FOLDER = os.path.join(DATA_FOLDER, 'ni_seq')
+DATA_SEC_IND_FOLDER = os.path.join(DATA_FOLDER, 'sec_ind')
 DATA_DISTRIBUTION_FOLDER = os.path.join(OUTPUT_FOLDER, 'distributions')
 DATA_TSNE_FOLDER = os.path.join(OUTPUT_FOLDER, 'tsne')
 DATA_PCA_FOLDER = os.path.join(OUTPUT_FOLDER, 'pca')
@@ -42,6 +43,10 @@ SENTIMENT_LEXICON = os.path.join(DATA_FOLDER, 'LoughranMcDonald_MasterDictionary
 CIK_TICKER_ADDITIONAL = os.path.join(DATA_FOLDER, 'cik_ticker.csv')
 CIK_TICKER_ADDITIONAL_2 = os.path.join(DATA_FOLDER, 'cusip_ticker.csv')
 CIK_TICKER_ADDITIONAL_3 = os.path.join(DATA_FOLDER, 'cik_ticker_add.csv')
+COMP_SEC_IND_NASDAQ = os.path.join(DATA_FOLDER, 'companylist_nasdaq.csv')
+COMP_SEC_IND_AMEX = os.path.join(DATA_FOLDER, 'companylist_amex.csv')
+COMP_SEC_IND_NYSE = os.path.join(DATA_FOLDER, 'companylist_nyse.csv')
+
 OUTPUT_FOLDER_SENTIMENT = os.path.join(OUTPUT_FOLDER, 'sentiments')
 
 SECTION_1A = '1a_risk_factors'

@@ -4,12 +4,14 @@ from bs4 import BeautifulSoup
 import requests
 import os
 import re
-import pandas as pd
 import datetime as dt
 import io
 import time
 import glob
 import random
+import pandas as pd
+from urllib.request import urlopen
+from lxml.html import parse
 from multiprocessing import Manager, Process
 from dateutil.relativedelta import relativedelta
 analyze_topics_static = __import__('4a_analyze_topics_static')
@@ -180,6 +182,31 @@ def stock_get_cookie_and_token():
     return cookie, crumb
 
 
+# From https://gist.github.com/pratapvardhan/9b57634d57f21cf3874c
+'''
+Returns a tuple (Sector, Industry)
+Usage: GFinSectorIndustry('IBM')
+'''
+def get_sector_industry_google(name):
+    sector, industry = None, None
+    try:
+        tree = parse(urlopen('http://www.google.com/finance?&q=' + name))
+        sector, industry = tree.xpath("//a[@id='sector']")[0].text, tree.xpath("//a[@id='sector']")[0].getnext().text
+    except:
+        pass
+    return sector, industry
+
+
+def get_sector_industry_yahoo(ticker):
+    sector, industry = None, None
+    try:
+        tree = parse(urlopen('https://finance.yahoo.com/quote/' + ticker + '/profile'))
+        sector, industry = tree.xpath("//strong[@data-reactid=21]")[0].text, tree.xpath("//strong[@data-reactid=25]")[0].text
+    except:
+        pass
+    return sector, industry
+
+
 # date :(y,m,d)
 def get_stock_yahoo(ticker, start_date, end_date, cookie, crumb):
     # prepare input data as a tuple
@@ -325,17 +352,84 @@ def gather_net_income_and_stockholder_equity(company_cik, tickers, cusips, lperm
     return ni_seqs
 
 
-def compute_process(filenames, cik_2_oindices, stocks_already_computed, ni_seqs_already_computed, cookie, crumb, error_stocks, error_ni_seqs, pid):
+def gather_sector_industry(filename, company_cik, tickers, connection, sec_ind_lookup_table):
+    sec_ind = []
+
+    # Using first only ticker
+    for ticker in tickers:
+        # Google, /!\ too spammy and detected a robot :(
+        #sec, ind = get_sector_industry_google(ticker)
+        #if sec is not None and ind is not None:
+        #    sec_ind.append((sec, ind, 'google'))
+        # Yahoo
+        sec, ind = get_sector_industry_yahoo(ticker)
+        if sec is not None and ind is not None:
+            sec_ind.append((sec, ind, 'yahoo'))
+        # NASDAQ & NYSE & AMEX
+        if ticker in sec_ind_lookup_table:
+            for provider, sec_ind_ in sec_ind_lookup_table[ticker].items():
+                sec_ind.append((sec_ind_['sector'], sec_ind_['industry'], provider))
+
+    # Using the name
+    # Google, /!\ too spammy and detected a robot :(
+    #mysql_key = filename.replace(config.CIK_COMPANY_NAME_SEPARATOR, '/') + '.txt'
+    #company_names = []
+    #with connection.cursor() as cursor:
+    #    sql = "SELECT DISTINCT `company_names` from `10k` WHERE `file` = %s;"
+    #    cursor.execute(sql, mysql_key)
+    #    rows = cursor.fetchall()
+    #    if not (len(rows) == 1):
+    #        print(filename, mysql_key)
+    #    assert len(rows) == 1
+    #    company_names = rows[0]['company_names'].split(',')
+    #for company_name in company_names:
+    #    sec, ind = get_sector_industry_google(company_name)
+    #    if sec is not None and ind is not None:
+    #        sec_ind.append((sec, ind, 'google'))
+    #    # No name for yahoo
+    #    # No name for nasday/nyse/amex
+
+    # Insert into db
+    if len(sec_ind) > 0:
+        with connection.cursor() as cursor:
+            sql = "INSERT INTO `sector_industry` ({}) VALUES ({})"
+            for sec, ind, provider in sec_ind:
+                sql_final_keys = ['cik', 'sector', 'industry', 'provider']
+                sql_final_values = [company_cik, sec, ind, provider]
+                sql = sql.format(', '.join(sql_final_keys), ', '.join(['%s'] * len(sql_final_keys)))
+                cursor.execute(sql, tuple(sql_final_values))
+        connection.commit()
+
+    return sec_ind
+
+
+def convert_comp_sec_ind():
+    sec_ind_lookup_table = {}
+    for file, provider in zip([config.COMP_SEC_IND_NASDAQ, config.COMP_SEC_IND_AMEX, config.COMP_SEC_IND_NYSE], ['nasdaq', 'amex', 'nyse']):
+        df = pd.DataFrame.from_csv(file)
+        for i, row in df.iterrows():
+            tic = row.name.strip()
+            sec = row['Sector'].strip()
+            ind = row['industry'].strip()
+
+            if tic not in sec_ind_lookup_table:
+                sec_ind_lookup_table[tic] = {}
+            sec_ind_lookup_table[tic][provider] = {'industry':ind, 'sector':sec}
+
+    return sec_ind_lookup_table
+
+
+def compute_process(filenames, cik_2_oindices, sec_ind_lookup_table, stocks_already_computed, ni_seqs_already_computed, sec_ind_already_computed, cookie, crumb, error_stocks, error_ni_seqs, error_sec_inds, pid):
     connection = utils.create_mysql_connection(all_in_mem=True)
     db = wrds.Connection()
 
     for filename in filenames:
-        compute_process_utils(filename, cik_2_oindices, stocks_already_computed, ni_seqs_already_computed, connection, db, cookie, crumb, error_stocks, error_ni_seqs, pid)
+        compute_process_utils(filename, cik_2_oindices, sec_ind_lookup_table, stocks_already_computed, ni_seqs_already_computed, sec_ind_already_computed, connection, db, cookie, crumb, error_stocks, error_ni_seqs, error_sec_inds, pid)
 
     connection.close()
 
 
-def compute_process_utils(filename, cik_2_oindices, stocks_already_computed, ni_seqs_already_computed, connection, db, cookie, crumb, error_stocks, error_ni_seqs, pid):
+def compute_process_utils(filename, cik_2_oindices, sec_ind_lookup_table, stocks_already_computed, ni_seqs_already_computed, sec_ind_already_computed, connection, db, cookie, crumb, error_stocks, error_ni_seqs, error_sec_inds, pid):
     company_cik, temp = filename.split(config.CIK_COMPANY_NAME_SEPARATOR)
     company_cik = company_cik.rjust(10, '0')
     submitting_entity_cik, year, internal_number = temp.split('-')  # submitting_entity_cik might be different if it was a third-party filer agent
@@ -378,17 +472,33 @@ def compute_process_utils(filename, cik_2_oindices, stocks_already_computed, ni_
             error_stocks_utils.append(filename)
     error_stocks[pid] += error_stocks_utils
 
+    # Get Sector & Industry
+    error_sec_inds_utils = []
+    if filename not in sec_ind_already_computed:
+        sec_inds = gather_sector_industry(filename, company_cik, tickers, connection, sec_ind_lookup_table)
+        if len(sec_inds) > 0:
+            output = os.path.join(config.DATA_SEC_IND_FOLDER, filename) + '.pkl'
+            utils.save_pickle(sec_inds, output)
+        else:
+            error_sec_inds_utils.append(filename)
+    error_sec_inds[pid] += error_sec_inds_utils
+
 
 if not os.path.exists(config.DATA_STOCKS_FOLDER):
     os.makedirs(config.DATA_STOCKS_FOLDER)
 if not os.path.exists(config.DATA_NI_SEQ_FOLDER):
     os.makedirs(config.DATA_NI_SEQ_FOLDER)
+if not os.path.exists(config.DATA_SEC_IND_FOLDER):
+    os.makedirs(config.DATA_SEC_IND_FOLDER)
+
+sec_ind_lookup_table = convert_comp_sec_ind()
 
 sections_to_analyze = [config.DATA_1A_FOLDER, config.DATA_7A_FOLDER, config.DATA_7_FOLDER]
 for section in sections_to_analyze:
     print(section)
     stocks_already_computed = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_STOCKS_FOLDER))}
     ni_seqs_already_computed = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_NI_SEQ_FOLDER))}
+    sec_ind_already_computed = {f.split('/')[-1][:-4] for f in glob.glob("{}/*.pkl".format(config.DATA_SEC_IND_FOLDER))}
 
     connection = utils.create_mysql_connection(all_in_mem=True)
     db = wrds.Connection()
@@ -417,10 +527,10 @@ for section in sections_to_analyze:
         filenames_chunk = utils.chunks(filenames, 1 + int(len(filenames) / config.NUM_CORES))
         error_stocks = manager.list([[]] * config.NUM_CORES)
         error_ni_seqs = manager.list([[]] * config.NUM_CORES)
-
+        error_sec_inds = manager.list([[]] * config.NUM_CORES)
         procs = []
         for i in range(config.NUM_CORES):
-            procs.append(Process(target=compute_process, args=(filenames_chunk[i], cik_2_oindices, stocks_already_computed, ni_seqs_already_computed, cookie, crumb, error_stocks, error_ni_seqs, i)))
+            procs.append(Process(target=compute_process, args=(filenames_chunk[i], cik_2_oindices, sec_ind_lookup_table, stocks_already_computed, ni_seqs_already_computed, sec_ind_already_computed, cookie, crumb, error_stocks, error_ni_seqs, error_sec_inds, i)))
             procs[-1].start()
 
         for p in procs:
@@ -428,11 +538,13 @@ for section in sections_to_analyze:
     else:
         error_stocks = [[]]
         error_ni_seqs = [[]]
-        compute_process(filenames, cik_2_oindices, stocks_already_computed, ni_seqs_already_computed, cookie, crumb, error_stocks, error_ni_seqs, 0)
+        error_sec_inds = [[]]
+        compute_process(filenames, cik_2_oindices, sec_ind_lookup_table, stocks_already_computed, ni_seqs_already_computed, sec_ind_already_computed, sec_ind_already_computed, cookie, crumb, error_stocks, error_ni_seqs, 0)
 
     # Reduce
     error_stocks = sum(error_stocks, [])
     error_ni_seqs = sum(error_ni_seqs, [])
+    error_sec_inds = sum(error_sec_inds, [])
 
     # Write backs filenames which obtained an error
     if len(error_stocks) > 0:
@@ -442,4 +554,8 @@ for section in sections_to_analyze:
     if len(error_ni_seqs) > 0:
         with open('ni_seq_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_ni_seqs:
             for f in error_ni_seqs:
+                fp_ni_seqs.write(f + '\n')
+    if len(error_sec_inds) > 0:
+        with open('ni_seq_error_{}.txt'.format(section[section.rfind('/') + 1:]), 'w') as fp_ni_seqs:
+            for f in error_sec_inds:
                 fp_ni_seqs.write(f + '\n')
