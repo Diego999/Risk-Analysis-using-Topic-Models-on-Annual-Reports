@@ -540,7 +540,7 @@ if __name__ == "__main__":
             error_stocks = [[]]
             error_ni_seqs = [[]]
             error_sec_inds = [[]]
-            compute_process(filenames, cik_2_oindices, sec_ind_lookup_table, stocks_already_computed, ni_seqs_already_computed, sec_ind_already_computed, sec_ind_already_computed, cookie, crumb, error_stocks, error_ni_seqs, 0)
+            compute_process(filenames, cik_2_oindices, sec_ind_lookup_table, stocks_already_computed, ni_seqs_already_computed, sec_ind_already_computed, cookie, crumb, error_stocks, error_ni_seqs, error_sec_inds, 0)
 
         # Reduce
         error_stocks = sum(error_stocks, [])
