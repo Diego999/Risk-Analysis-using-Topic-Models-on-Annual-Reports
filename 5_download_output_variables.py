@@ -284,7 +284,8 @@ def gather_stock(filename, tickers, cusips, lpermnos, lpermcos, connection, db, 
     if start_date is not None:
         # First try with other indices from CRSP lookup-table
         indices = {'cusip': cusips, 'permno': lpermnos, 'permco': lpermcos}
-        start_date_others = start_date.strftime('%Y-%m-%d')
+        # To compute the volatility, we need to have the close price the day before !
+        start_date_others = (start_date - relativedelta(days=1)).strftime('%Y-%m-%d')
         end_date_others = (start_date + relativedelta(years=1)).strftime('%Y-%m-%d')  # add only 1 year without extra day because MYSQL include the last day in the range
         for key, indices in indices.items():
             for index in indices:
@@ -297,7 +298,9 @@ def gather_stock(filename, tickers, cusips, lpermnos, lpermcos, connection, db, 
             for ticker in tickers:
                 # Compute final start/end date
                 end_date_tic = start_date + relativedelta(days=1, years=1)  # add year + 1 day, because the API return up to endDate (not included)
-                start_date_tic = (start_date.year, start_date.month, start_date.day)
+                # To compute the volatility, we need to have the close price the day before !
+                start_date_tic = (start_date - relativedelta(days=1))
+                start_date_tic = (start_date_tic.year, start_date_tic.month, start_date_tic.day)
                 end_date_tic = (end_date_tic.year, end_date_tic.month, end_date_tic.day)
                 stock = get_stock_yahoo(ticker, start_date_tic, end_date_tic, cookie, crumb)
                 if stock is not None:
