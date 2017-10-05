@@ -113,3 +113,5 @@ log.txt
 
 stock_error_*.txt
 ni_seq_error_*
+
+put_back_into_db.py
