@@ -41,10 +41,10 @@ def compute_ln_volatility(stocks):
     if stocks is None or len(stocks) == 0:
         return float('nan')
 
-    all_Pts = sorted(stocks.items(), key=lambda x:x[0]) # Sort by date
-    # There might be a "nan" is on single value, we should remove them to avoid having a bad computation !
-    Pt = np.array([x[1] for x in all_Pts[1:] if not math.isnan(x[1])])
-    Pt_1 = np.array([x[1] for x in all_Pts[:-1] if not math.isnan(x[1])])
+    all_Pts = [x[1] for x in sorted(stocks.items(), key=lambda x:x[0]) if not math.isnan(x[1])] # Sort by date
+    # There might be a "nan" on single values, we should remove them to avoid having a bad computation !
+    Pt = np.array(all_Pts[1:])
+    Pt_1 = np.array(all_Pts[:-1])
     rt = Pt/Pt_1 - 1.0
 
     # Warning: depending the paper, rt = ln(Pt) - ln(Pt_1)
@@ -62,7 +62,7 @@ def compute_return_on_equity(filename, ni_seq):
     ni = vals['ni']
     seq = vals['seq'] if not math.isnan(vals['seq']) else vals['teq']
     roe = float('nan')
-    if not math.isnan(seq):
+    if not math.isnan(seq) and not math.isnan(ni):
         roe = ni/seq
 
     return ni, seq, roe
