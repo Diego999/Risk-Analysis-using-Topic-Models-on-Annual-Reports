@@ -83,10 +83,12 @@ def compute_return_on_equity(filename, ni_seq, connection):
     return ni, seq, roe
 
 
-stocks = {f.split('/')[-1][:-4]:f for f in glob.glob("{}/*.pkl".format(config.DATA_STOCKS_FOLDER))}
-ni_seqs = {f.split('/')[-1][:-4]:f for f in glob.glob("{}/*.pkl".format(config.DATA_NI_SEQ_FOLDER))}
-sec_inds = {f.split('/')[-1][:-4]:f for f in glob.glob("{}/*.pkl".format(config.DATA_SEC_IND_FOLDER))}
 if __name__ == "__main__":
+    stocks = {f.split('/')[-1][:-4]: f for f in glob.glob("{}/*.pkl".format(config.DATA_STOCKS_FOLDER))}
+    ni_seqs = {f.split('/')[-1][:-4]: f for f in glob.glob("{}/*.pkl".format(config.DATA_NI_SEQ_FOLDER))}
+    sec_inds = {f.split('/')[-1][:-4]: f for f in glob.glob("{}/*.pkl".format(config.DATA_SEC_IND_FOLDER))}
+    connection = utils.create_mysql_connection(all_in_mem=True)
+
     sections_to_analyze = [config.DATA_1A_FOLDER, config.DATA_7A_FOLDER, config.DATA_7_FOLDER]
     for section in sections_to_analyze:
         data = analyze_topics_static.load_and_clean_data(section)
@@ -102,4 +104,5 @@ if __name__ == "__main__":
             current_stocks = get_data_from_pickles(file, stocks)
             data[file]['volatility'] = compute_ln_volatility(current_stocks)
             ni_seq = get_data_from_pickles(file, ni_seqs)
-            data[file]['return_on_equity'] = compute_return_on_equity(file, ni_seq)
+            data[file]['return_on_equity'] = compute_return_on_equity(file, ni_seq, connection)
+    connection.close()
