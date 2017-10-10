@@ -4,11 +4,6 @@ import numpy
 import random
 import re
 import utils
-import collections
-import stanford_corenlp_pywrapper
-import pickle
-from gensim.models import Phrases
-from gensim.corpora import Dictionary
 from multiprocessing import Process, Manager
 analyze_topics_static = __import__('4a_analyze_topics_static')
 infer_topics = __import__('4d_infer_topics')
@@ -17,13 +12,13 @@ config = __import__('0_config')
 
 pattern_remove_multiple_space = re.compile(r'\s+')
 pattern_remove_new_lines = re.compile(r'\n+')
-pattern_non_char_digit_hash_perc_dash = re.compile(r'[^a-z0-9#%\' -.\']+') # Override we want to keep sentence
+pattern_non_char_digit_hash_perc_dash = re.compile(r'[^a-z0-9#%\' -.\']+')
 pattern_remove_multiple_dash = re.compile(r'-+')
 pattern_map_digit_to_hash = re.compile(r'[0-9]+')
 pattern_html_tags = re.compile('<.*?>')
 pattern_multiple_hash = re.compile(r'#+')
-pattern_dot_among_hashes = re.compile(r'#+ *. *#+') # Added
-pattern_comma_among_hashes = re.compile(r'#+ *, *#+') # Added
+pattern_dot_among_hashes = re.compile(r'#+ *. *#+')
+pattern_comma_among_hashes = re.compile(r'#+ *, *#+')
 remove_numbers_redundancy = re.compile(r'[%$ -]*#+[%$ -]*')
 remove_numbers_redundancy_2 = re.compile(r'\( *# *\)')
 remove_numbers_redundancy_3 = re.compile(r'#a')
@@ -41,18 +36,18 @@ def clean(buffer, KEYWORDS_TO_DETECT, MIN_LENGTH_EMPTY, MIN_LENGTH_KEYWORDS, MIN
     text = re.sub(pattern_remove_new_lines, ' ', text)
     text = re.sub(pattern_remove_multiple_space, ' ', text)
     text = re.sub(pattern_multiple_hash, '#', text)
-    text = re.sub(pattern_dot_among_hashes, '#', text) # Added
-    text = re.sub(pattern_comma_among_hashes, '#', text) # Added
-    text = re.sub(pattern_multiple_hash, '#', text) # Added
-    text = re.sub(remove_numbers_redundancy_2, '#', text) # Added
-    text = re.sub(remove_numbers_redundancy_3, '#', text) # Added
-    text = re.sub(remove_numbers_redundancy_4, '#', text) # Added
-    text = re.sub(remove_numbers_redundancy, ' _NUM_ ', text) # Added
-    text = re.sub(remove_multiple_dots, '.', text) # Added
-    text = re.sub(remove_multiple_dashes, '', text) # Added
-    text = re.sub(remove_multiple_dollars, '$', text) # Added
-    text = re.sub(remove_multiple_numbers, ' _NUM_ ', text) # Added
-    text = re.sub(pattern_remove_multiple_space, ' ', text) # Added
+    text = re.sub(pattern_dot_among_hashes, '#', text)
+    text = re.sub(pattern_comma_among_hashes, '#', text)
+    text = re.sub(pattern_multiple_hash, '#', text)
+    text = re.sub(remove_numbers_redundancy_2, '#', text)
+    text = re.sub(remove_numbers_redundancy_3, '#', text)
+    text = re.sub(remove_numbers_redundancy_4, '#', text)
+    text = re.sub(remove_numbers_redundancy, ' _NUM_ ', text)
+    text = re.sub(remove_multiple_dots, '.', text)
+    text = re.sub(remove_multiple_dashes, '', text)
+    text = re.sub(remove_multiple_dollars, '$', text)
+    text = re.sub(remove_multiple_numbers, ' _NUM_ ', text)
+    text = re.sub(pattern_remove_multiple_space, ' ', text)
     text = text.strip()
 
     start_over = True
@@ -82,7 +77,7 @@ def load_and_clean_data_process(items, section, storage, pid):
 
         buffer = analyze_topics_static.remove_header_and_multiple_lines(buffer)
         if analyze_topics_static.content_relevant(buffer, *config.CLEAN_PARAMETERS[section]):
-            cleaned_data.append((item, clean(buffer, *config.CLEAN_PARAMETERS[section]))) #Override clean function because we want to keep the '.'
+            cleaned_data.append((item, clean(buffer, *config.CLEAN_PARAMETERS[section])))
 
     storage[pid] = cleaned_data
 
@@ -134,4 +129,4 @@ if __name__ == "__main__":
         if not os.path.exists(path):
             os.makedirs(path)
 
-        data = load_and_clean_data(section)  # Override in order to keep '.' to distinguish sentences
+        data = load_and_clean_data(section)
