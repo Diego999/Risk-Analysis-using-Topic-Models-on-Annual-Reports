@@ -41,7 +41,9 @@ def compute_ln_volatility(stocks):
     if stocks is None or len(stocks) == 0:
         return float('nan')
 
-    all_Pts = [x[1] for x in sorted(stocks.items(), key=lambda x:x[0]) if not math.isnan(x[1])] # Sort by date
+    sorted_vals = [float(x[1]) for x in sorted(stocks.items(), key=lambda x: x[0]) if x[1] is not None and x[1] != 'null']
+    all_Pts = [y for y in sorted_vals if not math.isnan(y)] # Sort by date
+
     # There might be a "nan" on single values, we should remove them to avoid having a bad computation !
     Pt = np.array(all_Pts[1:])
     Pt_1 = np.array(all_Pts[:-1])
@@ -77,7 +79,7 @@ def compute_return_on_equity(filename, ni_seq, connection):
         ni = vals['ni']
         seq = vals['seq'] if not math.isnan(vals['seq']) else vals['teq']
         roe = float('nan')
-        if not math.isnan(seq) and not math.isnan(ni):
+        if not math.isnan(seq) and seq != 0.0 and not math.isnan(ni):
             roe = ni/seq
 
     return ni, seq, roe
@@ -99,10 +101,15 @@ if __name__ == "__main__":
         for file, attributes in data.items():
             data[file]['topics'] = topics[file]
 
-        # add ln volatility and return on equity
+        # add ln volatility, return on equity and sector/industry
         for file, attributes in data.items():
             current_stocks = get_data_from_pickles(file, stocks)
             data[file]['volatility'] = compute_ln_volatility(current_stocks)
+
             ni_seq = get_data_from_pickles(file, ni_seqs)
             data[file]['return_on_equity'] = compute_return_on_equity(file, ni_seq, connection)
+
+            sec_ind_prov = get_data_from_pickles(file, sec_inds)
+            sector, industry, provider = sec_ind_prov if sec_ind_prov is not None else None, None, None
+            data[file][provider] = {'sector':sector, 'industry':industry}
     connection.close()
