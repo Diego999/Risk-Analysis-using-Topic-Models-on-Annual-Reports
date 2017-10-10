@@ -48,6 +48,7 @@ COMP_SEC_IND_AMEX = os.path.join(DATA_FOLDER, 'companylist_amex.csv')
 COMP_SEC_IND_NYSE = os.path.join(DATA_FOLDER, 'companylist_nyse.csv')
 
 OUTPUT_FOLDER_SENTIMENT = os.path.join(OUTPUT_FOLDER, 'sentiments')
+OUTPUT_FOLDER_WORD_EMB = os.path.join(OUTPUT_FOLDER, 'words_emb_raw_text')
 
 SECTION_1A = '1a_risk_factors'
 DATA_1A_FOLDER = os.path.join(DATA_SECTON_FOLDER, SECTION_1A)
@@ -64,6 +65,7 @@ DATA_7A_TOPICS = os.path.join(DATA_SECTON_FOLDER, SECTION_7A + '.' + TOPIC_EXTEN
 SUFFIX_CLEAN_DATA = '_clean.txt'
 SUFFIX_PREPROCESSED_DATA = '_preprocessed.pkl'
 SUFFIX_PREPROCESSED_DATA_FOR_SENT = '_for_sent.pkl'
+SUFFIX_PREPROCESSED_DATA_FOR_WE = '_for_we.pkl'
 SUFFIX_INPUT_DATA = '_input'
 DICT_LEMMA_IDX = '_dict_lemma_idx.pkl'
 DICT_IDX_LEMMA = '_dict_idx_lemma.pkl'
@@ -118,6 +120,9 @@ REMOVE_START_WORDS_1A = ['item #a risk factors risk factors',
                          'risk factors and uncertainties',
                          'risk factors risk factors',
                          'risk factors',
+                         'isk factors and uncertainties',
+                         'isk factors risk factors',
+                         'isk factors',
                          'item #a']
 
 ITEM_7_TOPICS = 54
@@ -301,6 +306,17 @@ REMOVE_START_WORDS_7A = ['item #a - quantitative and qualitative disclosures abo
                          'qualitative and quantitative disclosures about market',
                          'qualitative and quantitative disclosure about market',
                          'quantitative and qualitative disclosures about market risk',
+                         'uantitative and qualitative disclosures about market risk -',
+                         'uantitative and qualitative disclosures about market risk',
+                         'uantitative and qualitative disclosure about market risk',
+                         'ualitative and quantitative disclosures about market risk',
+                         'ualitative and quantitative disclosure about market risk',
+                         'uantative and qualitive disclosures about market risk',
+                         'uantitative and qualitative disclosures about market',
+                         'uantitative and qualitative disclosure about market',
+                         'ualitative and quantitative disclosures about market',
+                         'ualitative and quantitative disclosure about market',
+                         'uantitative and qualitative disclosures about market risk',
                          'item #a market risks',
                          'item #a market',
                          'item #a',
