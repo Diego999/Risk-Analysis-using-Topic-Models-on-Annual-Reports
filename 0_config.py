@@ -3,7 +3,7 @@ import multiprocessing
 
 SF_NLP_JARS = './lib/stanford-corenlp-full-2017-06-09/*'
 STOPWORD_LIST = './stopwords_big.txt'
-FORCE_PREPROCESSING = False
+FORCE_PREPROCESSING = True
 
 TUNING = False
 
@@ -123,7 +123,8 @@ REMOVE_START_WORDS_1A = ['item #a risk factors risk factors',
                          'isk factors and uncertainties',
                          'isk factors risk factors',
                          'isk factors',
-                         'item #a']
+                         'item #a',
+                         'item #']
 
 ITEM_7_TOPICS = 54
 ITEM_7_PARAMS = None
