@@ -157,11 +157,14 @@ if __name__ == "__main__":
         os.makedirs(path)
 
     reports = glob.glob(config.DATA_AR_FOLDER + '/*/*.' + config.EXTENSION_CLEAN_PREPROCESSING)
-
     data = load_and_clean_data(reports)
-    '''output = config.DATA_FOLDER + '/all_10k_' + config.SUFFIX_CLEAN_DATA + config.SUFFIX_PREPROCESSED_DATA_FOR_WE.replace('pkl', 'txt')
-    with open(output, 'w', encoding='utf-8') as fp:
-        for item, text in data:
-            for sent in text.split(SENTENCE_DELIMITER):
-                fp.write(sent + '\n')'''
+
+    cleaned_reports = glob.glob(config.DATA_TEMP_FOLDER + '/*.' + config.EXTENSION_CLEAN_PREPROCESSING)
+    output = os.path.join(config.DATA_AR_FOLDER, 'all_10k_for_we.txt')
+    with open(output, 'w', encoding='utf-8') as fp_o:
+        for r in cleaned_reports:
+            with open(r, 'r', encoding='utf-8') as fp_i:
+                for l in fp_i:
+                    fp_o.write(l.strip() + '\n')
+    
 
