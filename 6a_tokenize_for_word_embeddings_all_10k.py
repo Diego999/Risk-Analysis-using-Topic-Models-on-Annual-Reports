@@ -109,9 +109,9 @@ def nlp_process(text, annotator):
 
 
 def load_and_clean_data_process(items, pid):
-    cleaned_data = []
     annotator = stanford_corenlp_pywrapper.CoreNLP(configdict={'annotators': 'tokenize, ssplit'}, corenlp_jars=[config.SF_NLP_JARS])
     for i, item in enumerate(items):
+        cleaned_data = []
         buffer = []
         with open(item, 'r', encoding='utf-8') as fp:
             for l in fp:
@@ -166,5 +166,5 @@ if __name__ == "__main__":
             with open(r, 'r', encoding='utf-8') as fp_i:
                 for l in fp_i:
                     fp_o.write(l.strip() + '\n')
-    
+
 
