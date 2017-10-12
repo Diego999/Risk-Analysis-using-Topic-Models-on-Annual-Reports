@@ -144,7 +144,7 @@ def load_and_clean_data(reports):
         for p in procs:
             p.join()
     else:
-        load_and_clean_data_process(reports)
+        load_and_clean_data_process(reports, 0)
 
 
 if __name__ == "__main__":
@@ -160,7 +160,7 @@ if __name__ == "__main__":
     data = load_and_clean_data(reports)
 
     cleaned_reports = glob.glob(config.DATA_TEMP_FOLDER + '/*.' + config.EXTENSION_CLEAN_PREPROCESSING)
-    output = os.path.join(config.DATA_AR_FOLDER, 'all_10k_for_we.txt')
+    output = os.path.join(config.DATA_FOLDER, 'all_10k_for_we.txt')
     with open(output, 'w', encoding='utf-8') as fp_o:
         for r in cleaned_reports:
             with open(r, 'r', encoding='utf-8') as fp_i:
