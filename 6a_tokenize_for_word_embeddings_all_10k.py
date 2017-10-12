@@ -35,6 +35,7 @@ remove_multiple_dots = re.compile(r'\. *\.+')
 remove_multiple_dashes = re.compile(r'([-] )+')
 remove_multiple_dollars = re.compile(r'([$] [-])+')
 remove_multiple_numbers = re.compile(r'( NUM )+')
+pattern_url = re.compile(r"((www\.[^\s]+)|(https?://[^\s]+)|(http?://[^\s]+))")
 def clean(buffer, KEYWORDS_TO_DETECT, MIN_LENGTH_EMPTY, MIN_LENGTH_KEYWORDS, MIN_LINES_KEYWORDS, REMOVE_START_WORDS):
     text = ' '.join(buffer).lower()
     text = re.sub(pattern_html_tags, ' ', text)
@@ -43,6 +44,7 @@ def clean(buffer, KEYWORDS_TO_DETECT, MIN_LENGTH_EMPTY, MIN_LENGTH_KEYWORDS, MIN
     text = re.sub(pattern_remove_quote_3, '', text)
     text = re.sub(pattern_remove_quote_4, '', text)
     text = re.sub(pattern_multiple_equal_underline, '', text)
+    text = re.sub(pattern_url, ' URL ', text)
     text = re.sub(pattern_non_char_digit_hash_perc_dash, ' ', text)
     text = re.sub(pattern_map_digit_to_hash, '#', text)
     text = re.sub(pattern_remove_multiple_dash, '-', text)
@@ -106,7 +108,7 @@ def nlp_process(text, annotator):
     return SENTENCE_DELIMITER.join(tokens_sent)
 
 
-def load_and_clean_data_process(items, output_folder, storage, pid):
+def load_and_clean_data_process(items, pid):
     cleaned_data = []
     annotator = stanford_corenlp_pywrapper.CoreNLP(configdict={'annotators': 'tokenize, ssplit'}, corenlp_jars=[config.SF_NLP_JARS])
     for i, item in enumerate(items):
@@ -115,45 +117,34 @@ def load_and_clean_data_process(items, output_folder, storage, pid):
             for l in fp:
                 buffer.append(l)
 
-        if len(buffer) > (200 + 250):
-            buffer = buffer[200:-250]
+        if len(buffer) > 200:
+            buffer = buffer[200:]
+            if len(buffer) > 250:
+                buffer = buffer[:-250]
+
+            buffer = [l for l in buffer if len(l.strip()) > 75 and not l.startswith('vrnt') and not l.startswith('us-gaap') and not l.startswith('uan') and not l.startswith('xbrli') and not l.startswith('ccitii')]
             buffer = analyze_topics_static.remove_header_and_multiple_lines(buffer)
-            cleaned_data.append((item, nlp_process(clean(buffer, None, None, None, None, None), annotator)))
+            cleaned_data = nlp_process(clean(buffer, None, None, None, None, None), annotator)
 
-    storage[pid] = cleaned_data
+        if len(cleaned_data) > 0:
+            item = item[item.rfind('/')+1:]
+            with open(config.DATA_TEMP_FOLDER + '/' + item, 'w', encoding='utf-8') as fp:
+                for l in cleaned_data.split(SENTENCE_DELIMITER):
+                    fp.write(l + '\n')
 
 
-def load_and_clean_data(output_folder, reports):
-    cleaned_data_file = output_folder + '/all_10k_' + config.SUFFIX_CLEAN_DATA
-    cleaned_data = []
-    if config.FORCE_PREPROCESSING or not os.path.exists(cleaned_data_file):
-        manager = Manager()
-        if config.MULTITHREADING:
-            items_chunk = utils.chunks(reports, 1 + int(len(reports) / config.NUM_CORES))
-            final_data = manager.list([[]] * config.NUM_CORES)
+def load_and_clean_data(reports):
+    if config.MULTITHREADING:
+        items_chunk = utils.chunks(reports, 1 + int(len(reports) / config.NUM_CORES))
+        procs = []
+        for i in range(config.NUM_CORES):
+            procs.append(Process(target=load_and_clean_data_process, args=(items_chunk[i], i)))
+            procs[-1].start()
 
-            procs = []
-            for i in range(config.NUM_CORES):
-                procs.append(Process(target=load_and_clean_data_process, args=(items_chunk[i], output_folder, final_data, i)))
-                procs[-1].start()
-
-            for p in procs:
-                p.join()
-        else:
-            final_data = [None]
-            load_and_clean_data_process(reports, output_folder, final_data, 0)
-        cleaned_data = sum(final_data, [])
-
-        with open(cleaned_data_file, 'w', encoding='utf-8') as fp:
-            for i, l in cleaned_data:
-                fp.write(i + '\t' + l + '\n')
+        for p in procs:
+            p.join()
     else:
-        with open(cleaned_data_file, 'r', encoding='utf-8') as fp:
-            for l in fp:
-                i, l = l.split('\t')
-                cleaned_data.append((i, l.strip()))
-
-    return cleaned_data
+        load_and_clean_data_process(reports)
 
 
 if __name__ == "__main__":
@@ -161,12 +152,16 @@ if __name__ == "__main__":
     numpy.random.seed(config.SEED)
     random.seed(config.SEED)
 
+    path = os.path.join(config.DATA_TEMP_FOLDER)
+    if not os.path.exists(path):
+        os.makedirs(path)
+
     reports = glob.glob(config.DATA_AR_FOLDER + '/*/*.' + config.EXTENSION_CLEAN_PREPROCESSING)
 
-    data = load_and_clean_data(config.DATA_FOLDER, reports)
-    output = config.DATA_FOLDER + '/all_10k_' + config.SUFFIX_CLEAN_DATA + config.SUFFIX_PREPROCESSED_DATA_FOR_WE.replace('pkl', 'txt')
+    data = load_and_clean_data(reports)
+    '''output = config.DATA_FOLDER + '/all_10k_' + config.SUFFIX_CLEAN_DATA + config.SUFFIX_PREPROCESSED_DATA_FOR_WE.replace('pkl', 'txt')
     with open(output, 'w', encoding='utf-8') as fp:
         for item, text in data:
             for sent in text.split(SENTENCE_DELIMITER):
-                fp.write(sent + '\n')
+                fp.write(sent + '\n')'''
 
