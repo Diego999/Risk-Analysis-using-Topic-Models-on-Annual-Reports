@@ -3,6 +3,7 @@ import os
 import glob
 import numpy as np
 import math
+import pandas as pd
 analyze_topics_static = __import__('4a_analyze_topics_static')
 infer_topics = __import__('4d_infer_topics')
 config = __import__('0_config')
@@ -107,9 +108,19 @@ if __name__ == "__main__":
             data[file]['volatility'] = compute_ln_volatility(current_stocks)
 
             ni_seq = get_data_from_pickles(file, ni_seqs)
-            data[file]['return_on_equity'] = compute_return_on_equity(file, ni_seq, connection)
+            ni, seq, roe = compute_return_on_equity(file, ni_seq, connection)
+            data[file]['ni'] = ni
+            data[file]['seq'] = seq
+            data[file]['roe'] = roe
 
             sec_ind_prov = get_data_from_pickles(file, sec_inds)
             sector, industry, provider = sec_ind_prov if sec_ind_prov is not None else None, None, None
-            data[file][provider] = {'sector':sector, 'industry':industry}
+            data[file]['provider_sector_industry'] = provider
+            data[file]['sector'] = sector
+            data[file]['industry'] = industry
+
+        df = pd.DataFrame.from_dict(data).T
+        df.to_pickle(os.path.join(section, 'data_df.pkl'))
+
+    #data[pd.isnull(data['volatility']) == False]
     connection.close()
