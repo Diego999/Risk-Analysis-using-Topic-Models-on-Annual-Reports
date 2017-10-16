@@ -9,7 +9,7 @@ if __name__ == "__main__":
     key = 'volatility'
     for section in sections_to_analyze:
         data = pd.read_pickle(os.path.join(section, 'data_df.pkl'))
-        data.replace([np.inf, -np.inf], np.nan)
+        data = data.replace([np.inf, -np.inf], np.nan)
         data = data[pd.isnull(data[key]) == False]
         pd.to_pickle(os.path.join(section, 'data_df_filtered.pkl'))
 
