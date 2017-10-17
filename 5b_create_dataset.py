@@ -120,7 +120,7 @@ if __name__ == "__main__":
             data[file]['industry'] = industry
 
         df = pd.DataFrame.from_dict(data).T
-        output = os.path.join(section[:section.rfind('/')], 'data_df.pkl')
+        output = os.path.join(section[:section.rfind('/')], section[section.rfind('/')+1:] + '_df.pkl')
         df.to_pickle(output)
 
     #data[pd.isnull(data['volatility']) == False]
