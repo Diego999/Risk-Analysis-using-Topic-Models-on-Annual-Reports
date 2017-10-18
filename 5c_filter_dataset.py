@@ -9,10 +9,10 @@ if __name__ == "__main__":
     keys = ['volatility', 'roe']
     for section in sections_to_analyze:
         for key in keys:
-            input_file = os.path.join(section[:section.rfind('/')], section[section.rfind('/')+1:] + '_df.pkl')
+            input_file = os.path.join(section[:section.rfind('/')], section[section.rfind('/')+1:] + config.SUFFIX_DF + '.pkl')
             data = pd.read_pickle(input_file)
             data = data.replace([np.inf, -np.inf], np.nan)
             data = data[pd.isnull(data[key]) == False]
-            output_file = input_file.replace('_df', '_df_' + key)
+            output_file = input_file.replace(config.SUFFIX_DF, config.SUFFIX_DF + key)
             pd.to_pickle(data, output_file)
 
