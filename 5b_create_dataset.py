@@ -114,14 +114,16 @@ if __name__ == "__main__":
             data[file]['roe'] = roe
 
             sec_ind_prov = get_data_from_pickles(file, sec_inds)
-            sector, industry, provider = sec_ind_prov if sec_ind_prov is not None else None, None, None
+            sector, industry, provider = None, None, None
+            if sec_ind_prov is not None:
+                sector, industry, provider = list(sec_ind_prov)
+
             data[file]['provider_sector_industry'] = provider
             data[file]['sector'] = sector
             data[file]['industry'] = industry
 
         df = pd.DataFrame.from_dict(data).T
-        output = os.path.join(section[:section.rfind('/')], section[section.rfind('/')+1:] + '_df.pkl')
+        output = os.path.join(section[:section.rfind('/')], section[section.rfind('/')+1:] + config.SUFFIX_DF + '.pkl')
         df.to_pickle(output)
 
-    #data[pd.isnull(data['volatility']) == False]
     connection.close()

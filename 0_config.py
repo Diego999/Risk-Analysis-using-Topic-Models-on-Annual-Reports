@@ -68,6 +68,7 @@ SUFFIX_PREPROCESSED_DATA = '_preprocessed.pkl'
 SUFFIX_PREPROCESSED_DATA_FOR_SENT = '_for_sent.pkl'
 SUFFIX_PREPROCESSED_DATA_FOR_WE = '_for_we.pkl'
 SUFFIX_INPUT_DATA = '_input'
+SUFFIX_DF = '_df'
 DICT_LEMMA_IDX = '_dict_lemma_idx.pkl'
 DICT_IDX_LEMMA = '_dict_idx_lemma.pkl'
 
