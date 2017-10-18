@@ -80,7 +80,7 @@ if __name__ == "__main__":
     if not os.path.exists(config.DATA_DISTRIBUTION_FOLDER):
         os.makedirs(config.DATA_DISTRIBUTION_FOLDER)
 
-    sections_to_analyze = [config.DATA_7A_FOLDER]
+    sections_to_analyze = [config.DATA_1A_FOLDER]
     for section in sections_to_analyze:
         data = analyze_topics_static.load_and_clean_data(section)
         data, lemma_to_idx, idx_to_lemma = analyze_topics_static.preprocess(section, data)
