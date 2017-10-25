@@ -4,6 +4,7 @@ import glob
 import numpy as np
 import math
 import pandas as pd
+import warnings
 analyze_topics_static = __import__('4a_analyze_topics_static')
 infer_topics = __import__('4d_infer_topics')
 config = __import__('0_config')
@@ -45,13 +46,23 @@ def compute_ln_volatility(stocks):
     sorted_vals = [float(x[1]) for x in sorted(stocks.items(), key=lambda x: x[0]) if x[1] is not None and x[1] != 'null']
     all_Pts = [y for y in sorted_vals if not math.isnan(y)] # Sort by date
 
-    # There might be a "nan" on single values, we should remove them to avoid having a bad computation !
-    Pt = np.array(all_Pts[1:])
-    Pt_1 = np.array(all_Pts[:-1])
-    rt = Pt/Pt_1 - 1.0
+    try:
+        # There might be a "nan" on single values, we should remove them to avoid having a bad computation !
+        #Pt = np.array(all_Pts[1:])
+        #Pt_1 = np.array(all_Pts[:-1])
+        #rt = Pt/Pt_1 - 1.0
 
-    # Warning: depending the paper, rt = ln(Pt) - ln(Pt_1)
-    return np.log(np.std(rt)) # ln(std(rt)) where rt = Pt - P_(t-1)
+        # Warning: depending the paper, rt = ln(Pt) - ln(Pt_1)
+        #return np.log(np.std(rt)) # ln(std(rt)) where rt = Pt - P_(t-1)
+
+        Pt = np.array(all_Pts[1:])
+        Pt_1 = np.array(all_Pts[:-1])
+        rt = np.log(Pt) - np.log(Pt_1)
+
+        # Warning: depending the paper, rt = ln(Pt) - ln(Pt_1)
+        return np.log(np.std(rt)) # ln(std(rt)) where rt = Pt - P_(t-1)
+    except:
+        return float('nan')
 
 
 # Return ROF (*100 to have %) or year t+1
@@ -87,6 +98,8 @@ def compute_return_on_equity(filename, ni_seq, connection):
 
 
 if __name__ == "__main__":
+    warnings.filterwarnings("error")
+
     stocks = {f.split('/')[-1][:-4]: f for f in glob.glob("{}/*.pkl".format(config.DATA_STOCKS_FOLDER))}
     ni_seqs = {f.split('/')[-1][:-4]: f for f in glob.glob("{}/*.pkl".format(config.DATA_NI_SEQ_FOLDER))}
     sec_inds = {f.split('/')[-1][:-4]: f for f in glob.glob("{}/*.pkl".format(config.DATA_SEC_IND_FOLDER))}
