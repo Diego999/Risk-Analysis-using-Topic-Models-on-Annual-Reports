@@ -29,11 +29,10 @@ def load_embeddings(file_name):
     return np.array(wv), vocabulary
 
 
-def get_colors(ws):
+def get_colors(ws, colors=np.array([sns.xkcd_rgb["purple"], sns.xkcd_rgb["brown"], sns.xkcd_rgb["red"], sns.xkcd_rgb["grey"], sns.xkcd_rgb["green"], sns.xkcd_rgb["pink"], sns.xkcd_rgb["orange"]])):
     keys = sorted(list(set(ws)))
     k2i = {k:i for i, k in enumerate(keys)}
     nb_keys = len(keys)
-    colors = np.array([sns.xkcd_rgb["purple"], sns.xkcd_rgb["brown"], sns.xkcd_rgb["red"], sns.xkcd_rgb["grey"], sns.xkcd_rgb["green"], sns.xkcd_rgb["pink"], sns.xkcd_rgb["orange"]])#np.array(["#%02x%02x%02x" % (int(r*255), int(g*255), int(b*255)) for r, g, b in sns.color_palette(n_colors=nb_keys)])
     color_keys = [k2i[sent] for sent in ws]
     color_vals = ws
 
@@ -82,17 +81,30 @@ if __name__ == '__main__':
             ws.append('neutral')
 
     nb_samples = len(vocabulary)
-    if os.path.exists('tsne_emb.pk'):
-        with open('tsne_emb.pk', 'rb') as fp:
+    if os.path.exists('embs/tsne_emb.pk'):
+        with open('embds/tsne_emb.pk', 'rb') as fp:
             Y = pickle.load(fp)
     else:
         tsne = TSNE(n_components=2, random_state=0)
         np.set_printoptions(suppress=True)
-        print('start')
         Y = tsne.fit_transform(wv[:nb_samples,:])
-        with open('tsne_emb.pk', 'wb') as fp:
+        with open('embds/tsne_emb.pk', 'wb') as fp:
             pickle.dump(Y, fp)
-        print('end')
 
+
+    # All word
     colors, color_keys, color_vals = get_colors(ws)
-    plot(Y, vocabulary, wv, ws, nb_samples, 'word embeddings', colors, color_keys, 'temp')
+    plot(Y, vocabulary, wv, ws, nb_samples, 'word embeddings', colors, color_keys, 'embds/wemb_all_words')
+
+    # Only sentiment words
+    idx_to_remove = set()
+    for i, s in enumerate(ws):
+        if s == 'neutral':
+            idx_to_remove.add(i)
+    Y = np.array([y for j, y in enumerate(Y.tolist()) if j not in idx_to_remove])
+    vocabulary = [v for j, v in enumerate(vocabulary) if j not in idx_to_remove]
+    wv = [v for j, v in enumerate(wv.tolist()) if j not in idx_to_remove]
+    ws = [s for j, s in enumerate(ws) if j not in idx_to_remove]
+
+    colors, color_keys, color_vals = get_colors(ws, np.array([sns.xkcd_rgb["purple"], sns.xkcd_rgb["brown"], sns.xkcd_rgb["red"], sns.xkcd_rgb["green"], sns.xkcd_rgb["pink"], sns.xkcd_rgb["orange"]]))
+    plot(Y, vocabulary, wv, ws, nb_samples, 'word embeddings', colors, color_keys, 'embds/wemb_only_sent_words')
