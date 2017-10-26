@@ -1,18 +1,7 @@
 import os
-import glob
-import re
-import stanford_corenlp_pywrapper
-import utils
 import logging
-import sys
 import numpy
-import collections
 import random
-from multiprocessing import Process, Manager
-from gensim.models import Phrases
-from gensim.corpora import Dictionary
-from gensim.models import CoherenceModel, LdaModel, HdpModel, LdaMulticore
-from gensim.models.wrappers import LdaMallet
 from gensim.models import ldaseqmodel
 analyze_topics_static = __import__('4a_analyze_topics_static')
 config = __import__('0_config')
