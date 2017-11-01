@@ -291,7 +291,54 @@ if __name__ == "__main__":
                 dn = hierarchy.dendrogram(linkage_distance_matrix, labels=np.array([x[0] for x in elems]), orientation='right')
                 plt.title('Hierarchical dendogram for year')
 
-                # Correlation graph by topics
-                #sns.pairplot(pd.DataFrame([np.array([xx[1] for xx in x['topics']]) for _, x in data_filtered.iterrows()]))
+                # Stack plot with time vs topic proportion
+                fig, ax = plt.subplots()
+                x = [x for x, _ in elems]
+                y = [xx for _, xx in elems]
+                y_t = np.transpose(np.array(y)) # topic vs time
+                ax.stackplot(x, *y_t, labels=['Topic #' + str(i + 1) for i in range(len(year_topics[0][1]))])
+                plt.xlabel('Year')
+                plt.xticks(range(elems[0][0], elems[-1][0]+1), rotation=-90)
+                plt.ylabel('Distribution')
+                plt.yticks([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+                plt.title('Evolution of topics through time over all sector')
+                labels = ['Topic #' + str(i + 1) for i in range(len(year_topics[0][1]))]
+                offset = 0
+                for i in range(0, len(labels)):
+                    if i % 2 == 0:
+                        ax.text(x[-1]+0.5, offset + y_t[i][-1]/2, labels[i])
+                    offset += y_t[i][-1]
 
+                # Stack plot with time vs topic proportion per sector
+                sector_year_topics = [(x['sector'], utils.year_annual_report_comparator(int(file.split(config.CIK_COMPANY_NAME_SEPARATOR)[1].split('-')[1])), np.array([xx[1] for xx in x['topics']])) for file, x in data_filtered.iterrows()]
+                sector_year_topics_dict = {}
+                for s, y, t in sector_year_topics:
+                    if s not in sector_year_topics_dict:
+                        sector_year_topics_dict[s] = {}
+                    if y not in sector_year_topics_dict[s]:
+                        sector_year_topics_dict[s][y] = []
+                    sector_year_topics_dict[s][y].append(t)
+                for s in sector_year_topics_dict.keys():
+                    for y in sector_year_topics_dict[s].keys():
+                        sector_year_topics_dict[s][y] = np.mean(sector_year_topics_dict[s][y], axis=0)
+
+
+                for s in sorted(list(sector_year_topics_dict.keys())):
+                    elems = sorted(sector_year_topics_dict[s].items(), key=lambda x:x[0])
+                    fig, ax = plt.subplots()
+                    x = [x for x, _ in elems]
+                    y = [xx for _, xx in elems]
+                    y_t = np.transpose(np.array(y))  # topic vs time
+                    ax.stackplot(x, *y_t, labels=['Topic #' + str(i + 1) for i in range(len(year_topics[0][1]))])
+                    plt.xlabel('Year')
+                    plt.xticks(range(elems[0][0], elems[-1][0] + 1), rotation=-90)
+                    plt.ylabel('Distribution')
+                    plt.yticks([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+                    plt.title('Sector ' + s)
+                    labels = ['Topic #' + str(i + 1) for i in range(len(year_topics[0][1]))]
+                    offset = 0
+                    for i in range(0, len(labels)):
+                        if i % 2 == 0:
+                            ax.text(x[-1] + 0.5, offset + y_t[i][-1] / 2, labels[i])
+                        offset += y_t[i][-1]
                 plt.show()
