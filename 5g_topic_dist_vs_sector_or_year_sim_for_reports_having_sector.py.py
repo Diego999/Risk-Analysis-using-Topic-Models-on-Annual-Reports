@@ -322,7 +322,6 @@ if __name__ == "__main__":
                     for y in sector_year_topics_dict[s].keys():
                         sector_year_topics_dict[s][y] = np.mean(sector_year_topics_dict[s][y], axis=0)
 
-
                 for s in sorted(list(sector_year_topics_dict.keys())):
                     elems = sorted(sector_year_topics_dict[s].items(), key=lambda x:x[0])
                     fig, ax = plt.subplots()
