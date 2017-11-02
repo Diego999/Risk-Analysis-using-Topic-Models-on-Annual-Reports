@@ -172,10 +172,10 @@ if __name__ == "__main__":
 
         total = len({k for k,v in company_reports.items()})
         current_sum = 0
-        for nb, reports in sorted(company_nb_reports.items(), key=lambda x:x[0]):
-            percent = 100.0*float(len(reports)/total)
+        for nb, ciks in sorted(company_nb_reports.items(), key=lambda x:x[0]):
+            percent = 100.0*float(len(ciks)/total)
             current_sum += percent
-            print(nb, '{} reports '.format(len(reports)), ' {:.2f} '.format(percent), '(total {:.2f})'.format(current_sum))
+            print(nb, '{} companies '.format(len(ciks)), ' {:.2f} '.format(percent), '(total {:.2f})'.format(current_sum))
 
         final_nb = 10
         ciks = {x.split(config.CIK_COMPANY_NAME_SEPARATOR)[0] for x in company_nb_reports[final_nb]}
@@ -188,6 +188,34 @@ if __name__ == "__main__":
                     name.append(l)
             names[cik] = name[0]
 
+        # Average of company having X reports
+        #for nb, ciks in sorted(company_nb_reports.items(), key=lambda x:x[0]):
+        #    year_topics = [(utils.year_annual_report_comparator(int(file.split(config.CIK_COMPANY_NAME_SEPARATOR)[1].split('-')[1])), np.array([xx[1] for xx in x['topics']])) for file, x in data_filtered.iterrows() if file.split(config.CIK_COMPANY_NAME_SEPARATOR)[0] in ciks]
+        #    topics_year = {}
+        #    for y, t in year_topics:
+        #        if y not in topics_year:
+        #            topics_year[y] = []
+        #        topics_year[y].append(t)
+        #    for y, t in topics_year.items():
+        #        topics_year[y] = np.mean(np.array(t), axis=0)
+        #    elems = sorted(topics_year.items(), key=lambda x: x[0])
+        #    # Stack plot with time vs topic proportion
+        #    fig, ax = plt.subplots()
+        #    x = [x for x, _ in elems]
+        #    y = [xx for _, xx in elems]
+        #    y_t = np.transpose(np.array(y))  # topic vs time
+        #    labels = ['Topic #' + str(i + 1) for i in range(len(year_topics[0][1]))]
+        #    ax.stackplot(x, *y_t, labels=labels)
+        #    plt.xlabel('Year')
+        #    plt.xticks(list(range(1993, 2018)), rotation=-90)
+        #    plt.ylabel('Distribution')
+        #    plt.yticks([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+        #    plt.title('Evolution of topics through time for companies having {} reports'.format(nb))
+        #    handles, labels = ax.get_legend_handles_labels()
+        #    ax.legend(handles[::-1], labels[::-1], fontsize=8)
+        #    plt.show()
+
+        # Per company
         for cik in ciks:
             years = sorted(list(company_reports[cik].keys()))
             topics = {year:company_reports[cik][year] for year in years}
