@@ -5,6 +5,7 @@ import random
 import pickle
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
+import matplotlib.gridspec as gridspec
 analyze_topics_static = __import__('4a_analyze_topics_static')
 config = __import__('0_config')
 
@@ -93,11 +94,26 @@ if __name__ == "__main__":
         model, c_v, u_mass = analyze_topics_static.train_topic_model_or_load(corpus, dictionary, texts, model_file=model_filepath, only_viz=True)
 
         num_topics = config.TRAIN_PARAMETERS[section][0]
-        for t in range(num_topics):
+        cols = 11
+        rows = int(num_topics/cols)
+        '''for t in range(num_topics):
             plt.figure()
             x = model.show_topic(t, 50)
             x = {k:v for k,v in x}  # convert from string to float
             plt.imshow(WordCloud(background_color='white').fit_words(x))
             plt.axis("off")
             plt.title("Topic #" + str(t+1))
-            plt.show()
+            plt.savefig("1a_risk_factors_Topic_" + str(t+1) + '.png')'''
+
+        plt.figure(figsize=(rows, cols))
+        gs1 = gridspec.GridSpec(rows, cols)
+        gs1.update(wspace=.0, hspace=.25)
+        for t in range(num_topics):
+            ax1 = plt.subplot(gs1[t])
+            plt.axis('off')
+            plt.title("Topic #" + str(t+1))
+            ax1.set_aspect('equal')
+            x = model.show_topic(t, 50)
+            x = {k: v for k, v in x}  # convert from string to float
+            plt.imshow(WordCloud(background_color='white').fit_words(x), interpolation='nearest', aspect='auto')
+        plt.show()
