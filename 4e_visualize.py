@@ -84,7 +84,7 @@ def convert_to_matrices(embeddings):
 # - Revealing the structure at many scales on a single map
 # - Revealing data that lie in multiple, different, manifolds or clusters
 # - Reducing the tendency to crowd points together at the center
-def train_or_load_tsne(tsne_filepath, vals, seed=config.SEED):
+def train_or_load_tsne(tsne_filepath, vals, seed=config.SEED, n_iter=5000):
     tsne_lda = None
     tsne_model = None
     if os.path.exists(tsne_filepath):
@@ -93,7 +93,7 @@ def train_or_load_tsne(tsne_filepath, vals, seed=config.SEED):
         with open(tsne_filepath + '_model', 'rb') as fp:
             tsne_model = pickle.load(fp)
     else:
-        tsne_model = TSNE(n_components=2, perplexity=30.0, early_exaggeration=12.0, learning_rate=50.0, n_iter=5000, n_iter_without_progress=300, min_grad_norm=1e-7, verbose=1, random_state=seed, angle=.4, init='pca')
+        tsne_model = TSNE(n_components=2, perplexity=30.0, early_exaggeration=12.0, learning_rate=50.0, n_iter=n_iter, n_iter_without_progress=300, min_grad_norm=1e-7, verbose=1, random_state=seed, angle=.4, init='pca')
         tsne_lda = tsne_model.fit_transform(vals)
         with open(tsne_filepath + '_model', 'wb') as fp:
             pickle.dump(tsne_model, fp)
