@@ -15,10 +15,41 @@ if __name__ == "__main__":
 
         key = 'volatility'
         data = data[pd.isnull(data[key]) == False]
+        data_list = []
+        for file, values in data.iterrows():
+            values['file'] = file
+            data_list.append(values)
+
+        # all_volatilites = data['volatility'].tolist()
+        # As in On the risk prediction and analysis of soft information in finance reports
+        # Too gaussian, classes without labels !
+        #m = np.mean(all_volatilites)
+        #s = np.std(all_volatilites)
+        #u = 1
+        #l = 2
+        #ranges = [[-np.inf, m - 2 * s], [m - 2 * s + 1e-10, m - s], [m - s + 1e-10, m + 2 * s], [m + 2 * s + 1e-10, np.inf]]
+        #counters = [0, 0, 0, 0, 0]
+        #for v in all_volatilites:
+        #    for i, (r1, r2) in enumerate(ranges):
+        #        if r1 <= v <= r2:
+        #            counters[i] += 1
+        #            break
+
+        # Uniform split
+        k = 5 # nb classes
+        offset = int(len(data_list)/k)
+        data_list = sorted(data_list, key=lambda x:x['volatility'])
+        for k, i in enumerate(range(0, len(data_list), offset)):
+            for j in range(i, min(i+offset, len(data_list))):
+                data_list[j]['volatility_label'] = k
+
+        data_with_vol_labels = pd.DataFrame(data_list)
+        data_with_vol_labels.set_index(['file'], inplace=True)
         output_file = input_file.replace(config.SUFFIX_DF, config.SUFFIX_DF + '_' + key)
-        pd.to_pickle(data, output_file)
+        pd.to_pickle(data_with_vol_labels, output_file)
 
         key = 'roe'
+        roe_threshold = 5/100.0
         data = data[pd.isnull(data[key]) == False]
 
         data_list = []
@@ -40,6 +71,7 @@ if __name__ == "__main__":
                 if x_current['year'] == (x_previous['year'] + 1):
                     x_previous['roe_t+1'] = x_current['roe']
                     x_previous['roe_t+1_relative'] = (x_previous['roe_t+1'] - x_previous['roe'])/abs(x_previous['roe'] + 1e-10)
+                    x_previous['roe_label'] = (1 if x_previous['roe_t+1_relative'] >= roe_threshold else (-1 if x_previous['roe_t+1_relative'] <= -roe_threshold else 0))
                     data_list_with_roe_next_year.append(x_previous)
 
         data_with_roe_next_year = pd.DataFrame(data_list_with_roe_next_year)
