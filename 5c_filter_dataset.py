@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
         key = 'volatility'
         data = data[pd.isnull(data[key]) == False]
-        output_file = input_file.replace(config.SUFFIX_DF, config.SUFFIX_DF + key)
+        output_file = input_file.replace(config.SUFFIX_DF, config.SUFFIX_DF + '_' + key)
         pd.to_pickle(data, output_file)
 
         key = 'roe'
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         data_with_roe_next_year = pd.DataFrame(data_list_with_roe_next_year)
         data_with_roe_next_year.set_index(['cik', 'year', 'file'], inplace=True)
 
-        output_file = input_file.replace(config.SUFFIX_DF, config.SUFFIX_DF + key)
+        output_file = input_file.replace(config.SUFFIX_DF, config.SUFFIX_DF + '_' + key)
         pd.to_pickle(data_with_roe_next_year, output_file)
 
 
