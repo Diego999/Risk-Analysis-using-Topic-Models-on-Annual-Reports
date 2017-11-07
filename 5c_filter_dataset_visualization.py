@@ -38,3 +38,34 @@ if __name__ == "__main__":
             plt.legend(list(range(0, len(classes))))
             plt.title('Scatter plot of topics vs {}'.format(key))
             plt.show()
+
+            try:
+                years = sorted(list({file.split(config.CIK_COMPANY_NAME_SEPARATOR)[1].split('-')[1] for file, _ in data.iterrows()}), key=lambda y:utils.year_annual_report_comparator(int(y)))
+            except:
+                years = sorted(list({x[1]for x, _ in data.iterrows()}))
+
+            ind = 25 * np.arange(len(classes))  # the x locations for the groups
+            width = 0.5
+
+            fig, ax = plt.subplots()
+            rects = []
+            plt.title('Histogram for ' + key + ' per year')
+            plt.xlabel('Label')
+            plt.ylabel('Frequency')
+            ax.set_xticklabels(tuple(['Label {}'.format(c) for c in classes]), rotation=-90)
+            ax.set_xticks(ind + len(classes) * width + len(years) * width / 2)
+            for i, y in enumerate(years):
+                try:
+                    x = [x[key_label] for file, x in data.iterrows() if file.split(config.CIK_COMPANY_NAME_SEPARATOR)[1].split('-')[1] == y]
+                except:
+                    x = [x[key_label] for index, x in data.iterrows() if index[1] == y]
+                vect = [0]*len(classes)
+                for xx in x:
+                    vect[xx] += 1
+                rect = ax.bar(ind + len(classes) * width + i * width, vect, width)
+                rects.append(rect)
+            if int(years[0]) < 100: # 2 digits
+                ax.legend(tuple([rect[0] for rect in rects]), tuple([utils.year_annual_report_comparator(int(y)) for y in years]))
+            else:
+                ax.legend(tuple([rect[0] for rect in rects]), tuple([y for y in years]))
+            plt.show()
