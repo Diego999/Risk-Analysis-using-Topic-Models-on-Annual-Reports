@@ -20,28 +20,33 @@ if __name__ == "__main__":
             values['file'] = file
             data_list.append(values)
 
-        # all_volatilites = data['volatility'].tolist()
         # As in On the risk prediction and analysis of soft information in finance reports
         # Too gaussian, classes without labels !
-        #m = np.mean(all_volatilites)
-        #s = np.std(all_volatilites)
-        #u = 1
-        #l = 2
-        #ranges = [[-np.inf, m - 2 * s], [m - 2 * s + 1e-10, m - s], [m - s + 1e-10, m + 2 * s], [m + 2 * s + 1e-10, np.inf]]
+        all_volatilites = data['volatility'].tolist()
+        m = np.mean(all_volatilites)
+        s = np.std(all_volatilites)
+        u = 1
+        l = 2
+        ranges = [[-np.inf, m - 2 * s], [m - 2 * s + 1e-10, m - s], [m - s + 1e-10, m + s], [m + s + 1e-10, m + 2 * s], [m + 2 * s + 1e-10, np.inf]]
         #counters = [0, 0, 0, 0, 0]
         #for v in all_volatilites:
         #    for i, (r1, r2) in enumerate(ranges):
         #        if r1 <= v <= r2:
         #            counters[i] += 1
         #            break
+        for x in data_list:
+            for i, (r1, r2) in enumerate(ranges):
+                if r1 <= x['volatility'] <= r2:
+                    x['volatility_label'] = i
+            assert 'volatility_label' in x
 
         # Uniform split
-        k = 5 # nb classes
-        offset = int(len(data_list)/k)
-        data_list = sorted(data_list, key=lambda x:x['volatility'])
-        for k, i in enumerate(range(0, len(data_list), offset)):
-            for j in range(i, min(i+offset, len(data_list))):
-                data_list[j]['volatility_label'] = k
+        #k = 5 # nb classes
+        #offset = int(len(data_list)/k)
+        #data_list = sorted(data_list, key=lambda x:x['volatility'])
+        #for k, i in enumerate(range(0, len(data_list), offset)):
+        #    for j in range(i, min(i+offset, len(data_list))):
+        #        data_list[j]['volatility_label'] = k
 
         data_with_vol_labels = pd.DataFrame(data_list)
         data_with_vol_labels.set_index(['file'], inplace=True)
@@ -57,7 +62,7 @@ if __name__ == "__main__":
             values = values.to_dict()
             values['file'] = file
             values['cik'] = file.split(config.CIK_COMPANY_NAME_SEPARATOR)[0]
-            values['year'] =  utils.year_annual_report_comparator(int(file.split(config.CIK_COMPANY_NAME_SEPARATOR)[1].split('-')[1]))
+            values['year'] = utils.year_annual_report_comparator(int(file.split(config.CIK_COMPANY_NAME_SEPARATOR)[1].split('-')[1]))
             data_list.append(values)
 
         data_list = sorted(data_list, key=lambda x: (x['cik'], x['year']))
