@@ -18,6 +18,7 @@ from scipy import interp
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.preprocessing import label_binarize
+from sklearn.metrics import f1_score
 import random
 config = __import__('0_config')
 visualize = __import__('4e_visualize')
@@ -101,14 +102,24 @@ def print_and_get_precision_recall_fscore_support(Y_testing, Y_hat):
     return precision, recall, fscore, support
 
 
+def print_and_get_macro_micro_weighted_fscore(Y_testing, Y_hat):
+    macro = f1_score(Y_testing, Y_hat, average='macro')
+    micro = f1_score(Y_testing, Y_hat, average='micro')
+    weighted = f1_score(Y_testing, Y_hat, average='weighted')
+
+    print('Fscore Macro   : {}'.format('{:.2f}'.format(100 * macro)))
+    print('Fscore Micro   : {}'.format('{:.2f}'.format(100 * micro)))
+    print('Fscore Weighted: {}'.format('{:.2f}'.format(100 * weighted)))
+
+    return macro, micro, weighted
+
+
 def print_and_get_classification_report(Y_testing, Y_hat):
     res = classification_report(Y_testing, Y_hat, target_names=['Class {}'.format(k) for k in range(len(classes))], digits=4)
     print(res)
     return res
 
-# NE pas repousser les cuticules. Seulement après la douche avec un ongle humide
-# Toujours mettre des gants en faisant la vaisselle !
-#90-120k cheveux. On perd de 10 à 60 par jour. Pousse 1cm par mois
+
 def plot_roc(Y_testing, Y_hat, classes, key):
     Y_testing_onehot = label_binarize(Y_testing, classes)
     Y_hat_onehot = label_binarize(Y_hat, classes)
@@ -278,6 +289,7 @@ if __name__ == "__main__":
                 print(key)
                 print_and_get_accuracy(Y_testing, Y_hat)
                 print_and_get_precision_recall_fscore_support(Y_testing, Y_hat)
+                print_and_get_macro_micro_weighted_fscore(Y_testing, Y_hat)
                 print_and_get_classification_report(Y_testing, Y_hat)
                 #plot_confusion(Y_testing, Y_hat, classes)
                 #plot_roc(Y_testing, Y_hat, classes, key)
