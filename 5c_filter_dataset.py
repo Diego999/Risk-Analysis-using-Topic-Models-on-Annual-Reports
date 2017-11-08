@@ -27,7 +27,8 @@ if __name__ == "__main__":
         s = np.std(all_volatilites)
         u = 1
         l = 2
-        ranges = [[-np.inf, m - 2 * s], [m - 2 * s + 1e-10, m - s], [m - s + 1e-10, m + s], [m + s + 1e-10, m + 2 * s], [m + 2 * s + 1e-10, np.inf]]
+        #ranges = [[-np.inf, m - 2 * s], [m - 2 * s + 1e-10, m - s], [m - s + 1e-10, m + s], [m + s + 1e-10, m + 2 * s], [m + 2 * s + 1e-10, np.inf]]
+        ranges = [[-np.inf, m - s], [m - s + 1e-10, m + s], [m + s + 1e-10, np.inf]]
         #counters = [0, 0, 0, 0, 0]
         #for v in all_volatilites:
         #    for i, (r1, r2) in enumerate(ranges):
@@ -41,7 +42,7 @@ if __name__ == "__main__":
             assert 'volatility_label' in x
 
         # Uniform split
-        #k = 5 # nb classes
+        #k = 3 # nb classes
         #offset = int(len(data_list)/k)
         #data_list = sorted(data_list, key=lambda x:x['volatility'])
         #for k, i in enumerate(range(0, len(data_list), offset)):
