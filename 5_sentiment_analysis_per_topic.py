@@ -259,7 +259,7 @@ if __name__ == "__main__":
 
     master_dictionary, md_header, sentiment_categories, stopwords, total_documents = utils.load_masterdictionary(config.SENTIMENT_LEXICON, True, False, True)
 
-    sections_to_analyze = [config.DATA_7A_FOLDER]
+    sections_to_analyze = [config.DATA_1A_FOLDER]
     for section in sections_to_analyze:
         path = os.path.join(config.OUTPUT_FOLDER_SENTIMENT, section[section.rfind('/')+1:])
         if not os.path.exists(path):
