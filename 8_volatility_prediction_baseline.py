@@ -19,6 +19,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.preprocessing import label_binarize
 from sklearn.metrics import f1_score
+from xgboost import XGBClassifier
 import random
 config = __import__('0_config')
 visualize = __import__('4e_visualize')
@@ -282,10 +283,10 @@ if __name__ == "__main__":
             #for clf, param_dist in zip(classifiers, param_dists):
             #    res = tune(clf, X_training + X_valid, Y_training + Y_valid, param_dist)
 
-            classifiers = [linear_model.LogisticRegression(solver='lbfgs'), RandomForestClassifier(n_estimators=20), SVC(kernel='linear'), SVC(kernel='rbf'), MLPClassifier(early_stopping=True)]
+            classifiers = [linear_model.LogisticRegression(solver='lbfgs'), RandomForestClassifier(n_estimators=20), SVC(kernel='linear'), SVC(kernel='rbf'), MLPClassifier(early_stopping=True), XGBClassifier(nthread=8)]
             for clf in classifiers:
-                clf.fit(X_training+X_valid, Y_training+Y_valid)
-                Y_hat = clf.predict(X_testing)
+                clf.fit(np.array(X_training+X_valid), np.array(Y_training+Y_valid))
+                Y_hat = clf.predict(np.array(X_testing))
                 print(key)
                 print_and_get_accuracy(Y_testing, Y_hat)
                 print_and_get_precision_recall_fscore_support(Y_testing, Y_hat)
