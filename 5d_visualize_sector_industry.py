@@ -135,7 +135,7 @@ if __name__ == "__main__":
     np.random.seed(config.SEED) # To choose the same set of color
     random.seed(config.SEED)
 
-    sections_to_analyze = [config.DATA_1A_FOLDER, config.DATA_7_FOLDER, config.DATA_7A_FOLDER]
+    sections_to_analyze = [config.DATA_1A_FOLDER, config.DATA_7A_FOLDER]
     for section in sections_to_analyze:
         input_file = os.path.join(section[:section.rfind('/')], section[section.rfind('/') + 1:] + config.SUFFIX_DF + '.pkl')
         data = pd.read_pickle(input_file)

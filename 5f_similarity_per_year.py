@@ -12,6 +12,17 @@ from scipy.cluster import hierarchy
 config = __import__('0_config')
 visualize = __import__('4e_visualize')
 
+
+def get_topics(data):
+    id_topics = [x['topics'] for _, x in data.iterrows()]
+    return np.array([[xxx[1] for xxx in xx] for xx in id_topics])
+
+
+def get_key_vals(data, key):
+    temp = [(file, x[key]) for file, x in data.iterrows()]
+    return [x[0] for x in temp], [x[1] for x in temp]
+
+
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
     # logging.getLogger().setLevel(logging.INFO)
@@ -57,19 +68,27 @@ if __name__ == "__main__":
         distances_centroids = pd.DataFrame(distances_centroids, columns=keys_centroids, index=keys_centroids)
         print(distances_centroids)
         # Set up the matplotlib figure
-        f, ax = plt.subplots(figsize=(11, 9))
+        f, ax = plt.subplots(figsize=(5, 3))
 
         # Generate a custom diverging colormap
         cmap = sns.diverging_palette(250, 15, s=75, l=40, n=15, center="dark")
 
         # Draw the heatmap with the mask and correct aspect ratio
-        ax = sns.heatmap(distances_centroids, cmap=cmap, vmax=1.0, square=True, linewidths=.5, cbar_kws={"shrink": .5})
+        #mask = np.zeros_like(distances_centroids, dtype=np.bool)
+        #mask[np.triu_indices_from(mask)] = True
+        #ax = sns.heatmap(distances_centroids, cmap=cmap, vmax=1.0, square=True, linewidths=0.5, cbar_kws={"shrink": .5}, mask=mask)
+        #ax.get_figure().savefig('cosine_similarity_centroids.png')
+        #plt.yticks(rotation=0)
+        #plt.xticks(rotation=90)
+
+        ax = sns.heatmap(distances_centroids, cmap=cmap, vmax=1.0, square=True, linewidths=0.5, cbar_kws={"shrink": .5})
         ax.get_figure().savefig('cosine_similarity_centroids.png')
         for method in ['average']:
             clustergrid = sns.clustermap(distances_centroids, cmap=cmap, linewidths=.75, figsize=(13, 13), method=method)
             plt.savefig('hierarchical_clustering_cos_sim_{}.png'.format(method))
-            plt.figure()
-            dn = hierarchy.dendrogram(clustergrid.dendrogram_col.linkage, labels=np.array(keys_centroids), orientation='right')
+            plt.figure(figsize=(5,3))
+            dn = hierarchy.dendrogram(clustergrid.dendrogram_col.linkage, labels=np.array(keys_centroids), orientation='top')
+            plt.xticks(rotation=90)
             plt.savefig('hierarchical_1D_clustering_cos_sim_{}.png'.format(method))
 
         # Cluster for pearson-correlation
@@ -90,4 +109,5 @@ if __name__ == "__main__":
             plt.figure()
             dn = hierarchy.dendrogram(clustergrid.dendrogram_col.linkage, labels=np.array(keys_centroids), orientation='right')
             plt.savefig('hierarchical_1D_clustering_pearson_{}.png'.format(method))
+
         plt.show()
