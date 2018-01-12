@@ -63,7 +63,7 @@ if __name__ == "__main__":
                 plt.xticks(rotation=-90)
                 plt.yticks(rotation=0)
                 plt.title('Topics by sector')
-
+                plt.gcf().subplots_adjust(bottom=0.25, left=0.25)
                 # hierarchical clustering per sector
                 distances_centroids = {}
                 topics_sector_mean_all = np.mean(np.array([x[1] for x in topics_sector.items()]), axis=0)
@@ -93,7 +93,7 @@ if __name__ == "__main__":
                 plt.title('Squared Jensen-Shannon divergence distance between sectors')
                 plt.xticks(rotation=-90)
                 plt.yticks(rotation=0)
-
+                plt.gcf().subplots_adjust(bottom=0.25, left=0.25)
                 plt.figure()
                 dn = hierarchy.dendrogram(linkage_distance_matrix, labels=np.array([x[0] for x in elems]), orientation='right')
                 plt.title('Hierarchical dendogram for sector')
@@ -114,7 +114,7 @@ if __name__ == "__main__":
                 plt.xticks(rotation=-90)
                 plt.yticks(rotation=0)
                 plt.title('Topics by year')
-
+                plt.gcf().subplots_adjust(bottom=0.25, left=0.25)
                 # hierarchical clustering per year
                 distances_centroids = {}
                 topics_year_mean_all = np.mean(np.array([x[1] for x in topics_year.items()]), axis=0)
@@ -144,7 +144,7 @@ if __name__ == "__main__":
                 plt.title('Squared Jensen-Shannon divergence distance between years')
                 plt.xticks(rotation=-90)
                 plt.yticks(rotation=0)
-
+                plt.gcf().subplots_adjust(bottom=0.25, left=0.25)
                 plt.figure()
                 dn = hierarchy.dendrogram(linkage_distance_matrix, labels=np.array([x[0] for x in elems]), orientation='right')
                 plt.title('Hierarchical dendogram for year')
@@ -166,7 +166,7 @@ if __name__ == "__main__":
                     if i % 2 == 0:
                         ax.text(x[-1]+0.5, offset + y_t[i][-1]/2, labels[i])
                     offset += y_t[i][-1]
-
+                plt.gcf().subplots_adjust(bottom=0.25, left=0.25)
                 # Stack plot with time vs topic proportion per sector
                 sector_year_topics = [(x['sector'], utils.year_annual_report_comparator(int(file.split(config.CIK_COMPANY_NAME_SEPARATOR)[1].split('-')[1])), np.array([xx[1] for xx in x['topics']])) for file, x in data_filtered.iterrows()]
                 sector_year_topics_dict = {}
@@ -192,6 +192,7 @@ if __name__ == "__main__":
                     plt.ylabel('Distribution')
                     plt.yticks([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
                     plt.title('Sector ' + s)
+                    plt.gcf().subplots_adjust(bottom=0.25, left=0.25)
                     labels = ['Topic #' + str(i + 1) for i in range(len(year_topics[0][1]))]
                     offset = 0
                     for i in range(0, len(labels)):

@@ -224,7 +224,7 @@ def plot_prec_rec_curve(Y_testing, Y_hat, classes, key):
                       ''.format(i, average_precision[i]))
 
     #fig = plt.gcf()
-    fig.subplots_adjust(bottom=0.25)
+    fig.subplots_adjust(bottom=0.25, left=0.25)
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
     plt.xlabel('Recall')

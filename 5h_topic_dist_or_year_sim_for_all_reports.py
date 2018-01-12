@@ -52,6 +52,7 @@ if __name__ == "__main__":
         plt.xticks(rotation=-90)
         plt.yticks(rotation=0)
         plt.title('Topics by year')
+        plt.gcf().subplots_adjust(bottom=0.25, left=0.25)
 
         # hierarchical clustering per year
         distances_centroids = {}
