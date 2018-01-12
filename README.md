@@ -1,10 +1,14 @@
 # Crawling-Edgar-Data-Annual-Report-10-k-From-U.S.-Securities-and-Exchange-Commission
+
 Download annual report 10-k of companies through U.S. Securities and Exchange Commission from first quarter 1993 to last quarter of the current year.
+Analyze Risk Factors section using topic modeling.
+The code is delivered as it is. This project is not maintained.
+You can find the paper [here](paper.pdf). 
 
 # Requirements
 It relies on Python 3.5. Due to a bug somewhere in Python & Gensim with multiprocessing, don't forget to run `export OMP_NUM_THREADS=1 && python3 myfile.py` for the step 4.
 
-# Description
+# Description of the dataset
 
 The script will create the followings folders:
 - `data`
